@@ -1,1 +1,8 @@
-/* TODO */
+body img {
+	-webkit-user-select: none;
+	-webkit-user-drag: none;
+}
+.swipeview-wrapper {
+	width: 100%;
+	height: 100%;
+}

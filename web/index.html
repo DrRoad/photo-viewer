@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html manifest="cache.manifest">
+<!-- <html manifest="cache.manifest"> -->
+<html>
 	<head>
 		<!-- App details -->
 		<title>My App</title>
@@ -19,9 +20,7 @@
 			</div>
 
 			<div class="app-content">
-				<div class="app-section">
-					<div class="app-button green" data-target="page2">Go to page 2</div>
-				</div>
+
 			</div>
 		</div>
 
@@ -33,17 +32,15 @@
 			</div>
 
 			<div class="app-content">
-				<div class="app-section">
-					<div class="app-button">MyAPI.ping();</div>
-				</div>
+				<div class="swipeview-wrapper"></div>
 			</div>
 		</div>
 
 		<!-- Scripts -->
 		<script src="js/zepto.min.js"></script>
+		<script src="lib/swipeview.js"></script>
 		<script src="http://cdn.kik.com/cards/0/cards.js"></script>
 		<script src="http://cdn.kik.com/app/1/app.js"></script>
-		<script src="zerver/MyAPI.js"></script>
 		<script src="js/main.js"></script>
 	</body>
 </html>
