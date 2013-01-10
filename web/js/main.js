@@ -1,11 +1,14 @@
+// SlideView takes over the content pane of your app screen.
+// DO NOT attempt to do anything to the app screen other than
+// through SlideView, or else things may (will probably) break.
 function SlideView(page, data) {
 	// Normal mod (%) operator in javascript is screeeeeewed up
 	// this one works properly.
-	function realMod(a, b) {
+	function realMod (a, b) {
 		return ((a % b) + b) % b
 	}
 
-	var wrapper = page.querySelector('.swipeview') || document.createElement('div');
+	var wrapper = document.createElement('div');
 	wrapper.style.width = '100%';
 	wrapper.style.height = '100%';
 
@@ -14,16 +17,10 @@ function SlideView(page, data) {
 		hastyPageFlip: true,
 	});
 
-	for (var i = 0; i < 3; i++) {
-		var el = document.createElement('div');
-		el.style.width = window.innerWidth;
-		el.style.overflow = 'hidden';
-		el.className = 'slideview-slide';
-		el.appendChild(getElement(i));
-		swipeview.masterPages[i].appendChild(el);
-	}
+	page.querySelector('.app-content').appendChild(wrapper);
 
-	function getElement(i) {
+	function getElement (i) {
+		i = realMod(i, elements.length);
 		var element = elements[i];
 		if (typeof element === 'string') {
 			var img = document.createElement('img');
@@ -34,38 +31,49 @@ function SlideView(page, data) {
 		}
 	}
 
+	function initSlides () {
+		for (var i = 0; i < 3; i++) {
+			var el = document.createElement('div');
+			el.style.width = window.innerWidth;
+			el.style.overflow = 'hidden';
+			el.className = 'slideview-slide';
+			el.appendChild(getElement(i - 1));
+			swipeview.masterPages[i].appendChild(el);
+		}
+		return this;
+	}
+
 	wrapper.addEventListener('swipeview-flip', function () {
-		data.index = realMod(gallery.page, elements.length);
+		data.index = realMod(swipeview.page, elements.length);
 		App.saveStack();
 
 		for (var i = 0; i < 3; i++) {
-			var m = gallery.masterPages[i];
+			var m = swipeview.masterPages[i];
 			var d = m.dataset;
 			if (d.upcomingPageIndex == d.pageIndex) continue;
 
 			var el = m.querySelector('.slideview-slide');
 			el.innerHTML = '';
-			el.appendChild(getElement(i));
+			el.appendChild(getElement(d.upcomingPageIndex));
 		}
 	}, false);
 
 	page.addEventListener('appLayout', function () {
-		if (!initialized) {
-			// TODO
-		} else {
-			swipeview.refreshSize();
-			swipeview.goToPage(data.index);
-		}
+		swipeview.refreshSize();
+		swipeview.goToPage(data.index);
 	}, false);
 
 	var elements;
+
 	// List can be either a list of elements, in which case each element
 	// is taken to represent a slide, or strings, in whcih case each element
 	// is taken to represent an image.
-	this.useList = function(list) {
+	this.useList = function (list) {
 		// TODO: Should probably sanity check here.
 		swipeview.updatePageCount(list.length);
 		elements = list;
+		initSlides();
+		return this;
 	}
 }
 
@@ -75,39 +83,8 @@ function SlideView(page, data) {
 	}
 	App.populator('viewer', function (page, data) {
 		var urls  = data.images;
-		var index = data.index;
-
-		var swipeview = page.querySelector('.swipeview-wrapper');
-		var gallery = new SwipeView(swipeview, { numberOfPages: urls.length, hastyPageFlip: true });
-
-		// Load initial data
-		for (var i = 0; i < 3; i++) {
-			var img = document.createElement('img');
-			img.width = window.innerWidth;
-			gallery.masterPages[i].appendChild(img);
-		}
-
-		gallery.onFlip(function () {
-			data.index = realMod(gallery.page, urls.length);
-			App.saveStack();
-
-			for (var i = 0; i < 3; i++) {
-				var m = gallery.masterPages[i];
-				var d = m.dataset;
-
-				// No update needed
-// 				if (d.upcomingPageIndex == d.pageIndex) continue;
-
-				var el = m.querySelector('img');
-				el.src = urls[d.upcomingPageIndex];
-			}
-
-		});
-
-		page.addEventListener('appLayout', function() {
-			gallery.refreshSize();
-			gallery.goToPage(data.index);
-		}, false);
+		var sv = new SlideView(page, data);
+		sv.useList(urls);
 	});
 	App.populator('gallery', function (page, data) {
 		var urls = data.images;
