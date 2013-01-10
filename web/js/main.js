@@ -1,77 +1,109 @@
+function SlideView(page, data) {
+	// Normal mod (%) operator in javascript is screeeeeewed up
+	// this one works properly.
+	function realMod(a, b) {
+		return ((a % b) + b) % b
+	}
+
+	var wrapper = page.querySelector('.swipeview') || document.createElement('div');
+	wrapper.style.width = '100%';
+	wrapper.style.height = '100%';
+
+	var swipeview = new SwipeView(wrapper, {
+		numberOfPages: 0,
+		hastyPageFlip: true,
+	});
+
+	for (var i = 0; i < 3; i++) {
+		var el = document.createElement('div');
+		el.style.width = window.innerWidth;
+		el.style.overflow = 'hidden';
+		el.className = 'slideview-slide';
+		el.appendChild(getElement(i));
+		swipeview.masterPages[i].appendChild(el);
+	}
+
+	function getElement(i) {
+		var element = elements[i];
+		if (typeof element === 'string') {
+			var img = document.createElement('img');
+			img.src = element;
+			return img;
+		} else {
+			return element;
+		}
+	}
+
+	wrapper.addEventListener('swipeview-flip', function () {
+		data.index = realMod(gallery.page, elements.length);
+		App.saveStack();
+
+		for (var i = 0; i < 3; i++) {
+			var m = gallery.masterPages[i];
+			var d = m.dataset;
+			if (d.upcomingPageIndex == d.pageIndex) continue;
+
+			var el = m.querySelector('.slideview-slide');
+			el.innerHTML = '';
+			el.appendChild(getElement(i));
+		}
+	}, false);
+
+	page.addEventListener('appLayout', function () {
+		if (!initialized) {
+			// TODO
+		} else {
+			swipeview.refreshSize();
+			swipeview.goToPage(data.index);
+		}
+	}, false);
+
+	var elements;
+	// List can be either a list of elements, in which case each element
+	// is taken to represent a slide, or strings, in whcih case each element
+	// is taken to represent an image.
+	this.useList = function(list) {
+		// TODO: Should probably sanity check here.
+		swipeview.updatePageCount(list.length);
+		elements = list;
+	}
+}
+
 (function (window, document, $, cards, App) {
-	function properMod(a, b) {
+	function realMod(a, b) {
 		return ((a % b) + b) % b
 	}
 	App.populator('viewer', function (page, data) {
-		var urls  = data.images,
-			index = data.index;
-		console.log(data.index);
-// 		var elwrap = page.querySelector('.app-content');
-// 		var el = document.createElement('div');
-// 		el.className = 'swipeview-wrapper';
-// 		elwrap.innerHTML = el.outerHTML;
-		el = page.querySelector('.swipeview-wrapper');
-// 		var img = document.createElement('img');
-// 		img.src = url;
-// 		img.style.width = '100%';
-// 		el.innerHTML = img.outerHTML;
-// 		function loadImage (index) {
-// 			//TODO
-// 			data.index = index;
-// 			App.saveStack();
-// 		}
-		var gallery = new SwipeView(el, { numberOfPages: urls.length });
-// 		gallery.goToPage(index);
+		var urls  = data.images;
+		var index = data.index;
+
+		var swipeview = page.querySelector('.swipeview-wrapper');
+		var gallery = new SwipeView(swipeview, { numberOfPages: urls.length, hastyPageFlip: true });
 
 		// Load initial data
 		for (var i = 0; i < 3; i++) {
-// 			var j = i + index;
-			var j = i;
-// 			var k = properMod(j + index, urls.length);
-			var pageindex = (j == 0) ? urls.length - 1 : j - 1;
-			el = document.createElement('img');
-			el.src = urls[pageindex];
-			el.width = window.innerWidth;
-
-			var p = gallery.masterPages[i];
-			p.appendChild(el);
-// 			p.dataset.pageIndex = k;
+			var img = document.createElement('img');
+			img.width = window.innerWidth;
+			gallery.masterPages[i].appendChild(img);
 		}
 
 		gallery.onFlip(function () {
-			data.index = properMod(gallery.page, urls.length);
-			console.log(data.index);
+			data.index = realMod(gallery.page, urls.length);
 			App.saveStack();
-			for (var i = 0; i < 3; i++) {
-				var upcoming = gallery.masterPages[i].dataset.upcomingPageIndex;
-// 				console.log("upcoming", upcoming);
-// 				upcoming = properMod(upcoming + i, urls.length);
-// 				var pageindex = (i == 0) ? urls.length - 1 : i - 1;
-// 				console.log(upcoming, i);
-// 				console.log("upcoming", upcoming);
 
-				var pageIndex = gallery.masterPages[i].dataset.pageIndex;
-// 				pageIndex = properMod(pageIndex + index, urls.length);
-// 				console.log("pageIndex:", pageIndex);
-				console.log(upcoming, pageIndex, i);
-// 				if (upcoming != pageIndex) {
-					var el = gallery.masterPages[i].querySelector('img');
-// 					el.className = 'loading';
-					el.src = urls[upcoming];
+			for (var i = 0; i < 3; i++) {
+				var m = gallery.masterPages[i];
+				var d = m.dataset;
+
+				// No update needed
+// 				if (d.upcomingPageIndex == d.pageIndex) continue;
+
+				var el = m.querySelector('img');
+				el.src = urls[d.upcomingPageIndex];
 			}
 
-// 			document.querySelector('#nav .selected').className = '';
-// 			dots[gallery.pageIndex+1].className = 'selected';
 		});
 
-		// Yum yum
-		// Our DOM element is not yet in the tree
-		// when this callback is called, but
-		// SwipeView assumes it should be when it
-		// initializes, and only grabs the width once.
-		// This will fail if the user interacts with
-		// the page in less than one second. Should
-		// really be done onload or something.
 		page.addEventListener('appLayout', function() {
 			gallery.refreshSize();
 			gallery.goToPage(data.index);

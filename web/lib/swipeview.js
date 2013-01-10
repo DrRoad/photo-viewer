@@ -83,7 +83,7 @@ var SwipeView = (function (window, document) {
 
 			this.refreshSize();
 
-			for (i=-1; i<2; i++) {
+			for (i = -1; i < 2; i++) {
 				div = document.createElement('div');
 				div.id = 'swipeview-masterpage-' + (i+1);
 				div.style.cssText = cssVendor + 'transform:translateZ(0);position:absolute;top:0;height:100%;width:100%;left:' + i*100 + '%';
