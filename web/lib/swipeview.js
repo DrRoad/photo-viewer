@@ -177,15 +177,19 @@ var SwipeView = (function (window, document) {
 		},
 
 		goToPage: function (p) {
-			var i;
+			var that = this;
+			var n = this.options.numberOfPages;
+			function positionPage(a, b, c) {
+				var m = that.masterPages;
+				m[a].style.left = p * 100 - 100 + '%';
+				m[b].style.left = p * 100 + '%';
+				m[c].style.left = p * 100 + 100 + '%';
 
-			this.masterPages[this.currentMasterPage].className = this.masterPages[this.currentMasterPage].className.replace(/(^|\s)swipeview-active(\s|$)/, '');
-			for (i=0; i<3; i++) {
-				className = this.masterPages[i].className;
-				/(^|\s)swipeview-loading(\s|$)/.test(className) || (this.masterPages[i].className = !className ? 'swipeview-loading' : className + ' swipeview-loading');
+				m[a].dataset.upcomingPageIndex = p === 0 ? n - 1 : p - 1;
+				m[b].dataset.upcomingPageIndex = p;
+				m[c].dataset.upcomingPageIndex = p === n - 1 ? 0 : p + 1;
 			}
-
-			p = p < 0 ? 0 : p > this.options.numberOfPages-1 ? this.options.numberOfPages-1 : p;
+			p = p < 0 ? 0 : p > n - 1 ? n - 1 : p;
 			this.page = p;
 			this.pageIndex = p;
 			this.slider.style[transitionDuration] = '0s';
@@ -193,32 +197,12 @@ var SwipeView = (function (window, document) {
 
 			this.currentMasterPage = (this.page + 1) - Math.floor((this.page + 1) / 3) * 3;
 
-			this.masterPages[this.currentMasterPage].className = this.masterPages[this.currentMasterPage].className + ' swipeview-active';
-
 			if (this.currentMasterPage === 0) {
-				this.masterPages[2].style.left = this.page * 100 - 100 + '%';
-				this.masterPages[0].style.left = this.page * 100 + '%';
-				this.masterPages[1].style.left = this.page * 100 + 100 + '%';
-
-				this.masterPages[2].dataset.upcomingPageIndex = this.page === 0 ? this.options.numberOfPages-1 : this.page - 1;
-				this.masterPages[0].dataset.upcomingPageIndex = this.page;
-				this.masterPages[1].dataset.upcomingPageIndex = this.page == this.options.numberOfPages-1 ? 0 : this.page + 1;
+				positionPage(2, 0, 1);
 			} else if (this.currentMasterPage == 1) {
-				this.masterPages[0].style.left = this.page * 100 - 100 + '%';
-				this.masterPages[1].style.left = this.page * 100 + '%';
-				this.masterPages[2].style.left = this.page * 100 + 100 + '%';
-
-				this.masterPages[0].dataset.upcomingPageIndex = this.page === 0 ? this.options.numberOfPages-1 : this.page - 1;
-				this.masterPages[1].dataset.upcomingPageIndex = this.page;
-				this.masterPages[2].dataset.upcomingPageIndex = this.page == this.options.numberOfPages-1 ? 0 : this.page + 1;
+				positionPage(0, 1, 2);
 			} else {
-				this.masterPages[1].style.left = this.page * 100 - 100 + '%';
-				this.masterPages[2].style.left = this.page * 100 + '%';
-				this.masterPages[0].style.left = this.page * 100 + 100 + '%';
-
-				this.masterPages[1].dataset.upcomingPageIndex = this.page === 0 ? this.options.numberOfPages-1 : this.page - 1;
-				this.masterPages[2].dataset.upcomingPageIndex = this.page;
-				this.masterPages[0].dataset.upcomingPageIndex = this.page == this.options.numberOfPages-1 ? 0 : this.page + 1;
+				positionPage(1, 2, 0);
 			}
 
 			this.__flip();
@@ -391,8 +375,6 @@ var SwipeView = (function (window, document) {
 				pageFlipIndex,
 				className;
 
-			this.masterPages[this.currentMasterPage].className = this.masterPages[this.currentMasterPage].className.replace(/(^|\s)swipeview-active(\s|$)/, '');
-
 			// Flip the page
 			if (this.directionX > 0) {
 				this.page = -Math.ceil(this.x / this.pageWidth);
@@ -415,14 +397,6 @@ var SwipeView = (function (window, document) {
 
 				pageFlipIndex = this.page + 1;
 			}
-
-			// Add active class to current page
-			className = this.masterPages[this.currentMasterPage].className;
-			/(^|\s)swipeview-active(\s|$)/.test(className) || (this.masterPages[this.currentMasterPage].className = !className ? 'swipeview-active' : className + ' swipeview-active');
-
-			// Add loading class to flipped page
-			className = this.masterPages[pageFlip].className;
-			/(^|\s)swipeview-loading(\s|$)/.test(className) || (this.masterPages[pageFlip].className = !className ? 'swipeview-loading' : className + ' swipeview-loading');
 
 			pageFlipIndex = pageFlipIndex - Math.floor(pageFlipIndex / this.options.numberOfPages) * this.options.numberOfPages;
 			this.masterPages[pageFlip].dataset.upcomingPageIndex = pageFlipIndex;		// Index to be loaded in the newly flipped page
@@ -449,7 +423,6 @@ var SwipeView = (function (window, document) {
 
 			for (var i=0; i<3; i++) {
 				if (this.masterPages[i]) {
-					this.masterPages[i].className = this.masterPages[i].className.replace(/(^|\s)swipeview-loading(\s|$)/, '');		// Remove the loading class
 					this.masterPages[i].dataset.pageIndex = this.masterPages[i].dataset.upcomingPageIndex;
 				} else {
 					debugger;

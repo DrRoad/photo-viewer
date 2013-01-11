@@ -1,3 +1,7 @@
+// Simple event dispatcher based off of jQuery. Supports
+// dispatching of arbitrary events, event namespaces, and
+// calling event handlers with arguments. Does not
+// support binding multiple events in a single call, or
 function Dispatcher () {
 	function intersection(a, b) {
 		var res = [];
@@ -50,8 +54,6 @@ function Dispatcher () {
 // DO NOT attempt to do anything to the app screen other than
 // through SlideView, or else things may (will probably) break.
 function SlideView (page) {
-	var len = 0;
-
 	var wrapper = document.createElement('div');
 	wrapper.style.width = '100%';
 	wrapper.style.height = '100%';
@@ -69,11 +71,6 @@ function SlideView (page) {
 		);
 	}
 
-	function changeLen (newLen) {
-		swipeview.updatePageCount(newLen);
-		len = newLen;
-	}
-
 	function getElement (i) {
 		function errorPage(customMessage) {
 			var err = document.createElement('p');
@@ -81,7 +78,6 @@ function SlideView (page) {
 			return err;
 		}
 
-		if (i < 0) return document.createElement('div');//? i + len : i;
 		var element = null;
 		try {
 			element = source(i);
@@ -152,8 +148,8 @@ function SlideView (page) {
 	// contian/return elements, in which case each element is taken to represent a
 	// slide, or strings, in whcih case each element is taken to represent an image.
 	this.source = function (newSource) {
-		var newLen;
-			changeLen(100000000);
+		var len;
+		len = 100000000;
 		if (typeof newSource === 'function') {
 			// Should be big enough
 			source = newSource;
@@ -191,10 +187,7 @@ function SlideView (page) {
 	}
 }
 
-(function (window, document, $, cards, App) {
-	function realMod(a, b) {
-		return ((a % b) + b) % b
-	}
+(function ($, cards, App) {
 	App.populator('viewer', function (page, data) {
 		var urls  = data.images;
 		var sv = new SlideView(page);
@@ -226,12 +219,12 @@ function SlideView (page) {
 
 	var images = [
 'http://theosophical.files.wordpress.com/2011/06/zero2.jpg',
-'http://1.bp.blogspot.com/-107YXK-eAXs/UB6V49H9yuI/AAAAAAAACsY/69ceZJXaYZE/s1600/number-one-.png',
+ 'http://2.bp.blogspot.com/-pi1jelOHWAA/UJ0rN3F0M-I/AAAAAAAAANE/nqbgpZjIbFk/s1600/edit(27117).png',
 'http://www.underdogmillionaire.com/blog/wp-content/uploads/2011/04/2-steps-to-get-rich.png',
-'http://openclipart.org/people/horse50/three.svg',
-'http://info.boltinsurance.com/Portals/16893/images/Four%20Risk%20Control%20Strategies.jpg'
+ 'http://www.techdigest.tv/three-logo-thumb.jpg',
+'http://danblackonleadership.info/wp-content/uploads/2012/12/Four-Steps-to-Develop-and-Install-Your-HOLD-PLUS-System.png'
 	];
-// 	App.load('gallery', {images: images});
+	App.load('gallery', {images: images});
 
 	try {
 		App.restore();
@@ -240,4 +233,4 @@ function SlideView (page) {
 		App.load('gallery', {images: images});
 	}
 
-})(window, document, Zepto, cards, App);
+})(Zepto, cards, App);
