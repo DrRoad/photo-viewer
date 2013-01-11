@@ -367,14 +367,18 @@ var SwipeView = (function (window, document) {
 
 			if (!this.moved) return;
 
+			var realDist = dist;
 			if (!this.options.loop && (this.x > 0 || this.x < this.maxX)) {
 				dist = 0;
+				realDist /= 3;
 				this.__event('movein');
 			}
 
 			// Check if we exceeded the snap threshold
 			if (dist < this.snapThreshold) {
-				this.slider.style[transitionDuration] = Math.floor(300 * dist / this.snapThreshold) + 'ms';
+				var val = Math.floor(300 * realDist / this.snapThreshold) + 'ms';
+				console.log(val);
+				this.slider.style[transitionDuration] = val;//'300ms';//
 				this.__pos(-this.page * this.pageWidth);
 				return;
 			}
@@ -444,8 +448,12 @@ var SwipeView = (function (window, document) {
 			this.__event('flip');
 
 			for (var i=0; i<3; i++) {
-				this.masterPages[i].className = this.masterPages[i].className.replace(/(^|\s)swipeview-loading(\s|$)/, '');		// Remove the loading class
-				this.masterPages[i].dataset.pageIndex = this.masterPages[i].dataset.upcomingPageIndex;
+				if (this.masterPages[i]) {
+					this.masterPages[i].className = this.masterPages[i].className.replace(/(^|\s)swipeview-loading(\s|$)/, '');		// Remove the loading class
+					this.masterPages[i].dataset.pageIndex = this.masterPages[i].dataset.upcomingPageIndex;
+				} else {
+					debugger;
+				}
 			}
 		},
 
