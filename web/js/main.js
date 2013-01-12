@@ -60,7 +60,7 @@ function SlideView (page) {
 
 	var swipeview = new SwipeView(wrapper, {
 		numberOfPages: 0,
-		hastyPageFlip: true,
+// 		hastyPageFlip: true,
 		loop: false,
 	});
 
@@ -86,9 +86,11 @@ function SlideView (page) {
 		}
 
 		if (typeof element === 'string') {
-			var img = document.createElement('img');
-			img.src = element;
-			return img;
+			var div = document.createElement('div');
+			div.style.width = '100%';
+			div.style.height = '100%';
+			div.style.background = 'url("' + element + '") center center no-repeat';
+			return div;
 		} else if (isElement(element)) {
 			return element;
 		} else {
@@ -101,6 +103,8 @@ function SlideView (page) {
 			var el = document.createElement('div');
 			el.style.width = window.innerWidth;
 			el.style.overflow = 'hidden';
+			el.style.width = '100%';
+			el.style.height = '100%';
 			el.className = 'slideview-slide';
 			swipeview.masterPages[i].appendChild(el);
 			el.appendChild(getElement(i - 1));
@@ -154,7 +158,6 @@ function SlideView (page) {
 			// Should be big enough
 			source = newSource;
 		} else if (Array.isArray(newSource)) {
-// 			changeLen(newSource.length);
 			source = function (i) {
 				if (i < 0 || i >= newSource.length) {
 					throw "Out of bounds! Trying to get element at index '" + i + "', but length is only '" + newSource.length + "'";
@@ -224,7 +227,7 @@ function SlideView (page) {
  'http://www.techdigest.tv/three-logo-thumb.jpg',
 'http://danblackonleadership.info/wp-content/uploads/2012/12/Four-Steps-to-Develop-and-Install-Your-HOLD-PLUS-System.png'
 	];
-	App.load('gallery', {images: images});
+// 	App.load('gallery', {images: images});
 
 	try {
 		App.restore();

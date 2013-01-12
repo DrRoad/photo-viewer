@@ -2,7 +2,7 @@
  * SwipeView v1.0 ~ Copyright (c) 2012 Matteo Spinelli, http://cubiq.org
  * Released under MIT license, http://cubiq.org/license
  */
-var SwipeView = (function (window, document) {
+var SwipeView = (function ($) {
 	var dummyStyle = document.createElement('div').style;
 	var vendor = (function () {
 		var vendors = 't,webkitT,MozT,msT,OT'.split(',');
@@ -18,6 +18,14 @@ var SwipeView = (function (window, document) {
 		return false;
 	})();
 	var cssVendor = vendor ? '-' + vendor.toLowerCase() + '-' : '';
+
+	function addClass(el, classy) {
+		$(el).addClass(classy);
+	}
+
+	function removeClass(el, classy) {
+		$(el).removeClass(classy);
+	}
 
 		// Style properties
 	var transform = prefixStyle('transform'),
@@ -375,6 +383,7 @@ var SwipeView = (function (window, document) {
 				pageFlipIndex,
 				className;
 
+			removeClass(this.masterPages[this.currentMasterPage], 'swipeview-active');
 			// Flip the page
 			if (this.directionX > 0) {
 				this.page = -Math.ceil(this.x / this.pageWidth);
@@ -398,6 +407,9 @@ var SwipeView = (function (window, document) {
 				pageFlipIndex = this.page + 1;
 			}
 
+			addClass(this.masterPages[this.currentMasterPage], 'swipview-active');
+			addClass(this.masterPages[pageFlip], 'swipeview-loading');
+
 			pageFlipIndex = pageFlipIndex - Math.floor(pageFlipIndex / this.options.numberOfPages) * this.options.numberOfPages;
 			this.masterPages[pageFlip].dataset.upcomingPageIndex = pageFlipIndex;		// Index to be loaded in the newly flipped page
 
@@ -410,19 +422,16 @@ var SwipeView = (function (window, document) {
 				this.masterPages[pageFlip].style.visibility = newX === 0 || newX == this.maxX ? 'hidden' : '';
 			}
 
-			if (this.x == newX) {
-				this.__flip();		// If we swiped all the way long to the next page (extremely rare but still)
-			} else {
-				this.__pos(newX);
-				if (this.options.hastyPageFlip) this.__flip();
-			}
+			this.__pos(newX);
+			if (this.options.hastyPageFlip) this.__flip();
 		},
 
 		__flip: function () {
 			this.__event('flip');
 
-			for (var i=0; i<3; i++) {
+			for (var i = 0; i < 3; i++) {
 				if (this.masterPages[i]) {
+					removeClass(this.masterPages[i], 'swipeview-loading');
 					this.masterPages[i].dataset.pageIndex = this.masterPages[i].dataset.upcomingPageIndex;
 				} else {
 					debugger;
@@ -447,4 +456,4 @@ var SwipeView = (function (window, document) {
 	}
 
 	return SwipeView;
-})(window, document);
+})(Zepto);
