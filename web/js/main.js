@@ -58,10 +58,7 @@ function SlideView (page) {
 	wrapper.style.width = '100%';
 	wrapper.style.height = '100%';
 
-	var swipeview = new SwipeView(wrapper, {
-		numberOfPages: 0,
-		loop: false,
-	});
+	var swipeview = new SwipeView(wrapper);
 
 	function isElement (o) {
 		if (typeof HTMLElement === "object") {
