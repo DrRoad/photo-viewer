@@ -2,6 +2,74 @@
  * SwipeView v1.0 ~ Copyright (c) 2012 Matteo Spinelli, http://cubiq.org
  * Released under MIT license, http://cubiq.org/license
  */
+function InputHandler (vendor) {
+	var self = this;
+	var hasTouch = 'ontouchstart' in window;
+	var resizeEvent = 'onorientationchange' in window ? 'orientationchange' : 'resize';
+	var startEvent = hasTouch ? 'touchstart' : 'mousedown';
+	var moveEvent = hasTouch ? 'touchmove' : 'mousemove';
+	var endEvent = hasTouch ? 'touchend' : 'mouseup';
+	var cancelEvent = hasTouch ? 'touchcancel' : 'mouseup';
+	var transitionEndEvent = (function () {
+		if ( vendor === false ) return false;
+
+		var transitionEnd = {
+			''			: 'transitionend',
+			'webkit'	: 'webkitTransitionEnd',
+			'Moz'		: 'transitionend',
+			'O'			: 'oTransitionEnd',
+			'ms'		: 'MSTransitionEnd'
+		};
+
+		return transitionEnd[vendor];
+	})();
+
+	function handleEvent (e) {
+		var t = e.type;
+		if (t == startEvent) dispatcher.fire('start', e, hasTouch ? e.touches[0] : e);
+		else if (t == moveEvent) dispatcher.fire('move', e, hasTouch ? e.touches[0] : e);
+		else if (t == cancelEvent) dispatcher.fire('end', e, hasTouch ? e.changedTouches[0] : e);
+		else if (t == endEvent) dispatcher.fire('end', e, hasTouch ? e.changedTouches[0] : e);
+		else if (t == resizeEvent) dispatcher.fire('resize', e);
+		else if (t == transitionEndEvent) dispatcher.fire('transitionEnd', e);
+	}
+
+	var dispatcher = new Dispatcher();
+	this.on = dispatcher.on;
+	this.off = dispatcher.off;
+
+	var wrapper;
+	var slider;
+	this.attach = function (newWrapper, newSlider) {
+		if (wrapper || slider) this.detach();
+		wrapper = newWrapper;
+		slider = newSlider;
+		window.addEventListener(resizeEvent, handleEvent, false);
+		wrapper.addEventListener(startEvent, handleEvent, false);
+		wrapper.addEventListener(moveEvent, handleEvent, false);
+		wrapper.addEventListener(endEvent, handleEvent, false);
+		slider.addEventListener(transitionEndEvent, handleEvent, false);
+		return this;
+	}
+
+	this.detach = function () {
+		window.removeEventListener(resizeEvent, handleEvent, false);
+		wrapper.removeEventListener(startEvent, handleEvent, false);
+		wrapper.removeEventListener(moveEvent, handleEvent, false);
+		wrapper.removeEventListener(endEvent, handleEvent, false);
+		slider.removeEventListener(transitionEndEvent, handleEvent, false);
+		return this;
+	}
+}
+
+// From http://fitzgeraldnick.com/weblog/26/ with slight modifications
+function bind(thisCtx, name /*, variadic args to curry */) {
+	var args = Array.prototype.slice.call(arguments, 2);
+	return function () {
+		return thisCtx[name].apply(thisCtx, args.concat(Array.prototype.slice.call(arguments)));
+	};
+}
+
 var SwipeView = (function ($) {
 	var dummyStyle = document.createElement('div').style;
 	var vendor = (function () {
@@ -33,32 +101,11 @@ var SwipeView = (function ($) {
 
 		// Browser capabilities
 		has3d = prefixStyle('perspective') in dummyStyle,
-		hasTouch = 'ontouchstart' in window,
 		hasTransform = !!vendor,
 		hasTransitionEnd = prefixStyle('transition') in dummyStyle,
 
 		// Helpers
 		translateZ = has3d ? ' translateZ(0)' : '',
-
-		// Events
-		resizeEvent = 'onorientationchange' in window ? 'orientationchange' : 'resize',
-		startEvent = hasTouch ? 'touchstart' : 'mousedown',
-		moveEvent = hasTouch ? 'touchmove' : 'mousemove',
-		endEvent = hasTouch ? 'touchend' : 'mouseup',
-		cancelEvent = hasTouch ? 'touchcancel' : 'mouseup',
-		transitionEndEvent = (function () {
-			if ( vendor === false ) return false;
-
-			var transitionEnd = {
-					''			: 'transitionend',
-					'webkit'	: 'webkitTransitionEnd',
-					'Moz'		: 'transitionend',
-					'O'			: 'oTransitionEnd',
-					'ms'		: 'MSTransitionEnd'
-				};
-
-			return transitionEnd[vendor];
-		})(),
 
 		SwipeView = function (el, options) {
 			var i,
@@ -106,20 +153,19 @@ var SwipeView = (function ($) {
 				this.masterPages.push(div);
 			}
 
-			className = this.masterPages[1].className;
-			this.masterPages[1].className = !className ? 'swipeview-active' : className + ' swipeview-active';
+			addClass(this.masterPages[1], 'swipeview-active');
 
-			window.addEventListener(resizeEvent, this, false);
-			this.wrapper.addEventListener(startEvent, this, false);
-			this.wrapper.addEventListener(moveEvent, this, false);
-			this.wrapper.addEventListener(endEvent, this, false);
-			this.slider.addEventListener(transitionEndEvent, this, false);
-			// in Opera >= 12 the transitionend event is lowercase so we register both events
-			if ( vendor == 'O' ) this.slider.addEventListener(transitionEndEvent.toLowerCase(), this, false);
+			this.inputhandler = new InputHandler(vendor);
+			this.inputhandler.attach(this.wrapper, this.slider);
+			this.inputhandler.on('start', bind(this, '__start'));
+			this.inputhandler.on('move', bind(this, '__move'));
+			this.inputhandler.on('end', bind(this, '__end'));
+			this.inputhandler.on('resize', bind(this, '__resize'));
+			this.inputhandler.on('transitionEnd', bind(this, '__transitionEnd'));
 
-/*			if (!hasTouch) {
-				this.wrapper.addEventListener('mouseout', this, false);
-			}*/
+			this.dispatcher = new Dispatcher();
+			this.on = this.dispatcher.on;
+			this.off = this.dispatcher.off;
 		};
 
 	SwipeView.prototype = {
@@ -129,42 +175,8 @@ var SwipeView = (function ($) {
 		pageIndex: 0,
 		customEvents: [],
 
-		onFlip: function (fn) {
-			this.wrapper.addEventListener('swipeview-flip', fn, false);
-			this.customEvents.push(['flip', fn]);
-		},
-
-		onMoveOut: function (fn) {
-			this.wrapper.addEventListener('swipeview-moveout', fn, false);
-			this.customEvents.push(['moveout', fn]);
-		},
-
-		onMoveIn: function (fn) {
-			this.wrapper.addEventListener('swipeview-movein', fn, false);
-			this.customEvents.push(['movein', fn]);
-		},
-
-		onTouchStart: function (fn) {
-			this.wrapper.addEventListener('swipeview-touchstart', fn, false);
-			this.customEvents.push(['touchstart', fn]);
-		},
-
 		destroy: function () {
-			while ( this.customEvents.length ) {
-				this.wrapper.removeEventListener('swipeview-' + this.customEvents[0][0], this.customEvents[0][1], false);
-				this.customEvents.shift();
-			}
-
-			// Remove the event listeners
-			window.removeEventListener(resizeEvent, this, false);
-			this.wrapper.removeEventListener(startEvent, this, false);
-			this.wrapper.removeEventListener(moveEvent, this, false);
-			this.wrapper.removeEventListener(endEvent, this, false);
-			this.slider.removeEventListener(transitionEndEvent, this, false);
-
-/*			if (!hasTouch) {
-				this.wrapper.removeEventListener('mouseout', this, false);
-			}*/
+			this.inputhandler.destroy();
 		},
 
 		refreshSize: function () {
@@ -232,28 +244,6 @@ var SwipeView = (function ($) {
 			this.__checkPosition();
 		},
 
-		handleEvent: function (e) {
-			switch (e.type) {
-				case startEvent:
-					this.__start(e);
-					break;
-				case moveEvent:
-					this.__move(e);
-					break;
-				case cancelEvent:
-				case endEvent:
-					this.__end(e);
-					break;
-				case resizeEvent:
-					this.__resize();
-					break;
-				case transitionEndEvent:
-				case 'otransitionend':
-					if (e.target == this.slider && !this.options.hastyPageFlip) this.__flip();
-					break;
-			}
-		},
-
 
 		/**
 		*
@@ -271,12 +261,8 @@ var SwipeView = (function ($) {
 			this.__pos(-this.page * this.pageWidth);
 		},
 
-		__start: function (e) {
-			//e.preventDefault();
-
+		__start: function (e, point) {
 			if (this.initiated) return;
-
-			var point = hasTouch ? e.touches[0] : e;
 
 			this.initiated = true;
 			this.moved = false;
@@ -290,19 +276,13 @@ var SwipeView = (function ($) {
 			this.directionX = 0;
 			this.directionLocked = false;
 
-/*			var matrix = getComputedStyle(this.slider, null).webkitTransform.replace(/[^0-9-.,]/g, '').split(',');
-			this.x = matrix[4] * 1;*/
-
 			this.slider.style[transitionDuration] = '0s';
-
-			this.__event('touchstart');
 		},
 
-		__move: function (e) {
+		__move: function (e, point) {
 			if (!this.initiated) return;
 
-			var point = hasTouch ? e.touches[0] : e,
-				deltaX = point.pageX - this.pointX,
+			var deltaX = point.pageX - this.pointX,
 				deltaY = point.pageY - this.pointY,
 				newX = this.x + deltaX,
 				dist = Math.abs(point.pageX - this.startX);
@@ -316,7 +296,6 @@ var SwipeView = (function ($) {
 
 			// We take a 10px buffer to figure out the direction of the swipe
 			if (this.stepsX < 10 && this.stepsY < 10) {
-//				e.preventDefault();
 				return;
 			}
 
@@ -336,24 +315,17 @@ var SwipeView = (function ($) {
 
 			if (!this.thresholdExceeded && dist >= this.snapThreshold) {
 				this.thresholdExceeded = true;
-				this.__event('moveout');
 			} else if (this.thresholdExceeded && dist < this.snapThreshold) {
 				this.thresholdExceeded = false;
-				this.__event('movein');
 			}
-
-/*			if (newX > 0 || newX < this.maxX) {
-				newX = this.x + (deltaX / 2);
-			}*/
 
 			this.__pos(newX);
 		},
 
-		__end: function (e) {
+		__end: function (e, point) {
 			if (!this.initiated) return;
 
-			var point = hasTouch ? e.changedTouches[0] : e,
-				dist = Math.abs(point.pageX - this.startX);
+			var dist = Math.abs(point.pageX - this.startX);
 
 			this.initiated = false;
 
@@ -363,7 +335,6 @@ var SwipeView = (function ($) {
 			if (!this.options.loop && (this.x > 0 || this.x < this.maxX)) {
 				dist = 0;
 				realDist /= 3;
-				this.__event('movein');
 			}
 
 			// Check if we exceeded the snap threshold
@@ -427,7 +398,7 @@ var SwipeView = (function ($) {
 		},
 
 		__flip: function () {
-			this.__event('flip');
+			this.dispatcher.fire('flip');
 
 			for (var i = 0; i < 3; i++) {
 				if (this.masterPages[i]) {
@@ -439,12 +410,8 @@ var SwipeView = (function ($) {
 			}
 		},
 
-		__event: function (type) {
-			var ev = document.createEvent("Event");
-
-			ev.initEvent('swipeview-' + type, true, true);
-
-			this.wrapper.dispatchEvent(ev);
+		__transitionEnd: function (e) {
+			if (e.target && this.slider && !this.options.hastyPageFlip) this.__flip();
 		}
 	};
 

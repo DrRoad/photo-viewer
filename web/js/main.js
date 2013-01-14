@@ -44,7 +44,7 @@ function Dispatcher () {
 		var handlers = events[name] || [];
 		var args = Array.prototype.slice.call(arguments, 1);
 		for (var i = 0; i < handlers.length; i++) {
-			handlers[i].callback(args);
+			handlers[i].callback.apply(null, args);
 		}
 		return this;
 	}
@@ -60,15 +60,15 @@ function SlideView (page) {
 
 	var swipeview = new SwipeView(wrapper, {
 		numberOfPages: 0,
-// 		hastyPageFlip: true,
 		loop: false,
 	});
 
 	function isElement (o) {
-		return (
-			typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
-			o && typeof o === "object" && o.nodeType === 1 && typeof o.nodeName==="string"
-		);
+		if (typeof HTMLElement === "object") {
+			return o instanceof HTMLElement
+		} else {
+			return o && typeof o === "object" && o.nodeType === 1 && typeof o.nodeName === "string"
+		}
 	}
 
 	function getElement (i) {
@@ -111,7 +111,7 @@ function SlideView (page) {
 		}
 	}
 
-	swipeview.onFlip(function () {
+	swipeview.on('flip', function () {
 		for (var i = 0; i < 3; i++) {
 			var m = swipeview.masterPages[i];
 			var d = m.dataset;
@@ -170,6 +170,11 @@ function SlideView (page) {
 		swipeview.updatePageCount(len);
 		initSlides();
 		return this;
+	}
+
+	var loadElm;
+	this.loader = function (newLoader) {
+		loadElm = newLoader;
 	}
 
 	this.page = function (newPage) {
