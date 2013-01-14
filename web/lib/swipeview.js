@@ -101,18 +101,16 @@ var SwipeView = (function ($) {
 	}
 
 		// Style properties
-	var transform = prefixStyle('transform'),
-		transitionDuration = prefixStyle('transitionDuration'),
+	var transform = prefixStyle('transform');
+	var transitionDuration = prefixStyle('transitionDuration');
 
-		SwipeView = function (el, options) {
-			var i;
-			var className;
-			var pageIndex;
-
-			this.wrapper = el;
-			this.wrapper.style.overflow = 'hidden';
-			this.wrapper.style.postition = 'relative';
-			this.options = {
+	function SwipeView (el) {
+		var self2 = this;
+		function init (el) {
+			self2.wrapper = el;
+			self2.wrapper.style.overflow = 'hidden';
+			self2.wrapper.style.postition = 'relative';
+			self2.options = {
 				text: null,
 				numberOfPages: 3,
 				snapThreshold: null,
@@ -120,18 +118,18 @@ var SwipeView = (function ($) {
 				loop: false,
 			};
 
-			this.masterPages = [];
+			self2.masterPages = [];
 
-			this.slider = document.createElement('div');
-			var s = this.slider.style;
+			self2.slider = document.createElement('div');
+			var s = self2.slider.style;
 			s.position = 'relative';
 			s.top = '0';
 			s.height = '100%';
 			s.width = '100%';
 			s[cssVendor + 'transition-timing-function'] = 'ease-out';
-			this.wrapper.appendChild(this.slider);
+			self2.wrapper.appendChild(self2.slider);
 
-			this.refreshSize();
+			self2.refreshSize();
 
 			for (var i = -1; i < 2; i++) {
 				var page = document.createElement('div');
@@ -144,34 +142,39 @@ var SwipeView = (function ($) {
 				if (i == -1) s.visibility = 'hidden';
 
 				page.dataset = {};
-				var pageIndex = i == -1 ? this.options.numberOfPages - 1 : i;
+				var pageIndex = i == -1 ? self2.options.numberOfPages - 1 : i;
 				page.dataset.pageIndex = pageIndex;
 				page.dataset.upcomingPageIndex = pageIndex;
 
-				this.slider.appendChild(page);
-				this.masterPages.push(page);
+				self2.slider.appendChild(page);
+				self2.masterPages.push(page);
 			}
 
-			addClass(this.masterPages[1], 'swipeview-active');
+			addClass(self2.masterPages[1], 'swipeview-active');
 
-			this.inputhandler = new InputHandler(vendor);
-			this.inputhandler.attach(this.wrapper, this.slider);
-			this.inputhandler.on('start', bind(this, '__start'));
-			this.inputhandler.on('move', bind(this, '__move'));
-			this.inputhandler.on('end', bind(this, '__end'));
-			this.inputhandler.on('resize', bind(this, '__resize'));
-			this.inputhandler.on('transitionEnd', bind(this, '__transitionEnd'));
+			var inputhandler = new InputHandler(vendor);
+			inputhandler.attach(self2.wrapper, self2.slider);
+			inputhandler.on('start', bind(self2, '__start'));
+			inputhandler.on('move', bind(self2, '__move'));
+			inputhandler.on('end', bind(self2, '__end'));
+			inputhandler.on('resize', bind(self2, '__resize'));
+			inputhandler.on('transitionEnd', bind(self2, '__transitionEnd'));
+			self2.destroy = function () {
+				inputhandler.detach();
+			}
 
-			this.dispatcher = new Dispatcher();
-			this.on = this.dispatcher.on;
-			this.off = this.dispatcher.off;
-			self = this;
+			self2.dispatcher = new Dispatcher();
+			self2.on = self2.dispatcher.on;
+			self2.off = self2.dispatcher.off;
+			self = self2;
 
-			this.currentMasterPage = 0;
-			this.x = 0;
-			this.page = 0;
-			this.pageIndex = 0;
-		};
+			self2.currentMasterPage = 0;
+			self2.x = 0;
+			self2.page = 0;
+			self2.pageIndex = 0;
+		}
+		init(el);
+	};
 	// Only allows one instance to properly exist, at least until I refactor things properly.
 	var self;
 	function deltaX () {
@@ -182,21 +185,17 @@ var SwipeView = (function ($) {
 	}
 
 	SwipeView.prototype = {
-		destroy: function () {
-			this.inputhandler.detach();
-		},
-
 		refreshSize: function () {
 			this.wrapperWidth = this.wrapper.clientWidth;
 			this.wrapperHeight = this.wrapper.clientHeight;
 			this.pageWidth = this.wrapperWidth;
-			this.maxX = -this.options.numberOfPages * this.pageWidth + this.wrapperWidth;
+			this.minX = (1 - this.options.numberOfPages) * this.pageWidth;
 			this.snapThreshold = Math.round(this.pageWidth * 0.15);
 		},
 
 		updatePageCount: function (n) {
 			this.options.numberOfPages = n;
-			this.maxX = -this.options.numberOfPages * this.pageWidth + this.wrapperWidth;
+			this.minX = (1 - this.options.numberOfPages) * this.pageWidth;
 		},
 
 		goToPage: function (p) {
@@ -267,7 +266,7 @@ var SwipeView = (function ($) {
 
 			var dx = point.pageX - this.pointX;
 			var newX = this.x + dx;
-			if (newX > 0 || newX < this.maxX) {
+			if (newX > 0 || newX < this.minX) {
 				newX = this.x + (dx / 2);
 			}
 
@@ -312,7 +311,7 @@ var SwipeView = (function ($) {
 			if (!this.moved) return;
 
 			var realDist = dist;
-			if (this.x > 0 || this.x < this.maxX) {
+			if (this.x > 0 || this.x < this.minX) {
 				dist = 0;
 				realDist /= 3;
 			}
@@ -372,7 +371,7 @@ var SwipeView = (function ($) {
 
 			// Hide the next page if we decided to disable looping
 			if (!this.options.loop) {
-				this.masterPages[pageFlip].style.visibility = newX === 0 || newX == this.maxX ? 'hidden' : '';
+				this.masterPages[pageFlip].style.visibility = newX === 0 || newX == this.minX ? 'hidden' : '';
 			}
 
 			this.__pos(newX);
