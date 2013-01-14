@@ -105,31 +105,27 @@ var SwipeView = (function ($) {
 	var transitionDuration = prefixStyle('transitionDuration');
 
 	function SwipeView (el) {
-		var self2 = this;
+		var self = this;
+		var wrapper = el;
+		var slider;
+		var len = 3;
+
 		function init (el) {
-			self2.wrapper = el;
-			self2.wrapper.style.overflow = 'hidden';
-			self2.wrapper.style.postition = 'relative';
-			self2.options = {
-				text: null,
-				numberOfPages: 3,
-				snapThreshold: null,
-				hastyPageFlip: false,
-				loop: false,
-			};
+			wrapper.style.overflow = 'hidden';
+			wrapper.style.postition = 'relative';
 
-			self2.masterPages = [];
+			self.masterPages = [];
 
-			self2.slider = document.createElement('div');
-			var s = self2.slider.style;
+			slider = document.createElement('div');
+			var s = slider.style;
 			s.position = 'relative';
 			s.top = '0';
 			s.height = '100%';
 			s.width = '100%';
 			s[cssVendor + 'transition-timing-function'] = 'ease-out';
-			self2.wrapper.appendChild(self2.slider);
+			wrapper.appendChild(slider);
 
-			self2.refreshSize();
+			self.refreshSize();
 
 			for (var i = -1; i < 2; i++) {
 				var page = document.createElement('div');
@@ -142,65 +138,58 @@ var SwipeView = (function ($) {
 				if (i == -1) s.visibility = 'hidden';
 
 				page.dataset = {};
-				var pageIndex = i == -1 ? self2.options.numberOfPages - 1 : i;
+				var pageIndex = i == -1 ? len - 1 : i;
 				page.dataset.pageIndex = pageIndex;
 				page.dataset.upcomingPageIndex = pageIndex;
 
-				self2.slider.appendChild(page);
-				self2.masterPages.push(page);
+				slider.appendChild(page);
+				self.masterPages.push(page);
 			}
 
-			addClass(self2.masterPages[1], 'swipeview-active');
+			addClass(self.masterPages[1], 'swipeview-active');
 
 			var inputhandler = new InputHandler(vendor);
-			inputhandler.attach(self2.wrapper, self2.slider);
-			inputhandler.on('start', bind(self2, '__start'));
-			inputhandler.on('move', bind(self2, '__move'));
-			inputhandler.on('end', bind(self2, '__end'));
-			inputhandler.on('resize', bind(self2, '__resize'));
-			inputhandler.on('transitionEnd', bind(self2, '__transitionEnd'));
-			self2.destroy = function () {
+			inputhandler.attach(wrapper, slider);
+			inputhandler.on('start', bind(self, '__start'));
+			inputhandler.on('move', bind(self, '__move'));
+			inputhandler.on('end', bind(self, '__end'));
+			inputhandler.on('resize', bind(self, '__resize'));
+			inputhandler.on('transitionEnd', transitionEnd);
+			self.destroy = function () {
 				inputhandler.detach();
 			}
 
-			self2.dispatcher = new Dispatcher();
-			self2.on = self2.dispatcher.on;
-			self2.off = self2.dispatcher.off;
-			self = self2;
+			self.dispatcher = new Dispatcher();
+			self.on = self.dispatcher.on;
+			self.off = self.dispatcher.off;
+			self = self;
 
-			self2.currentMasterPage = 0;
-			self2.x = 0;
-			self2.page = 0;
-			self2.pageIndex = 0;
+			self.currentMasterPage = 0;
+			self.x = 0;
+			self.page = 0;
+			self.pageIndex = 0;
 		}
-		init(el);
-	};
-	// Only allows one instance to properly exist, at least until I refactor things properly.
-	var self;
-	function deltaX () {
-		return self.pointX - self.startX;
-	}
-	function deltaY () {
-		return self.pointY - self.startY;
-	}
 
-	SwipeView.prototype = {
-		refreshSize: function () {
-			this.wrapperWidth = this.wrapper.clientWidth;
-			this.wrapperHeight = this.wrapper.clientHeight;
-			this.pageWidth = this.wrapperWidth;
-			this.minX = (1 - this.options.numberOfPages) * this.pageWidth;
+		function deltaX () {
+			return self.pointX - self.startX;
+		}
+
+		function deltaY () {
+			return self.pointY - self.startY;
+		}
+
+		this.refreshSize = function () {
+			this.pageWidth = wrapper.clientWidth;
+			this.minX = (1 - len) * this.pageWidth;
 			this.snapThreshold = Math.round(this.pageWidth * 0.15);
-		},
-
-		updatePageCount: function (n) {
-			this.options.numberOfPages = n;
-			this.minX = (1 - this.options.numberOfPages) * this.pageWidth;
-		},
-
-		goToPage: function (p) {
+		}
+		this.updatePageCount = function (n) {
+			len = n;
+			this.refreshSize();
+		}
+		this.goToPage = function (p) {
 			var self = this;
-			var n = this.options.numberOfPages;
+			var n = len;
 			function positionPage(a, b, c) {
 				var m = self.masterPages;
 				m[a].style.left = (p - 1) * 100 + '%';
@@ -214,7 +203,7 @@ var SwipeView = (function ($) {
 			p = p < 0 ? 0 : p > n - 1 ? n - 1 : p;
 			this.page = p;
 			this.pageIndex = p;
-			this.slider.style[transitionDuration] = '0s';
+			slider.style[transitionDuration] = '0s';
 			this.__pos(-p * this.pageWidth);
 
 			this.currentMasterPage = mod(this.page + 1, 3);
@@ -227,26 +216,20 @@ var SwipeView = (function ($) {
 				positionPage(1, 2, 0);
 			}
 
-			this.__flip();
-		},
-
-		/**
-		*
-		* Pseudo private methods
-		*
-		*/
-		__pos: function (x) {
+			flip ();
+		}
+		this.__pos = function (x) {
 			this.x = x;
-			this.slider.style[transform] = 'translate(' + x + 'px,0)';
-		},
+			slider.style[transform] = 'translate(' + x + 'px,0)';
+		}
 
-		__resize: function () {
+		this.__resize = function () {
 			this.refreshSize();
-			this.slider.style[transitionDuration] = '0s';
+			slider.style[transitionDuration] = '0s';
 			this.__pos(-this.page * this.pageWidth);
-		},
+		}
 
-		__start: function (e, point) {
+		this.__start = function (e, point) {
 			if (this.initiated) return;
 
 			this.initiated = true;
@@ -258,13 +241,13 @@ var SwipeView = (function ($) {
 			this.pointY = point.pageY;
 			this.directionLocked = false;
 
-			this.slider.style[transitionDuration] = '0s';
-		},
+			slider.style[transitionDuration] = '0s';
+		}
 
-		__move: function (e, point) {
+		this.__move = function (e, point) {
 			if (!this.initiated) return;
 
-			var dx = point.pageX - this.pointX;
+				 var dx = point.pageX - this.pointX;
 			var newX = this.x + dx;
 			if (newX > 0 || newX < this.minX) {
 				newX = this.x + (dx / 2);
@@ -298,19 +281,19 @@ var SwipeView = (function ($) {
 			}
 
 			this.__pos(newX);
-		},
+		}
 
-		__end: function (e, point) {
+		this.__end = function (e, point) {
 			if (!this.initiated) return;
 
-			this.pointX = point.pageX;
+				 this.pointX = point.pageX;
 			var dist = Math.abs(deltaX());
 
 			this.initiated = false;
 
 			if (!this.moved) return;
 
-			var realDist = dist;
+				 var realDist = dist;
 			if (this.x > 0 || this.x < this.minX) {
 				dist = 0;
 				realDist /= 3;
@@ -320,15 +303,15 @@ var SwipeView = (function ($) {
 			if (dist < this.snapThreshold) {
 				var val = Math.floor(300 * realDist / this.snapThreshold) + 'ms';
 				console.log(val);
-				this.slider.style[transitionDuration] = val;//'300ms';//
+				slider.style[transitionDuration] = val;//'300ms';//
 				this.__pos(-this.page * this.pageWidth);
 				return;
 			}
 
 			this.__checkPosition();
-		},
+		}
 
-		__checkPosition: function () {
+		this.__checkPosition = function () {
 			var pageFlip;
 			var pageFlipIndex;
 			var className;
@@ -338,7 +321,7 @@ var SwipeView = (function ($) {
 			if (deltaX() > 0) {
 				this.page = -Math.ceil(this.x / this.pageWidth);
 				this.currentMasterPage = mod(this.page + 1, 3);
-				this.pageIndex = this.pageIndex === 0 ? this.options.numberOfPages - 1 : this.pageIndex - 1;
+				this.pageIndex = this.pageIndex === 0 ? len - 1 : this.pageIndex - 1;
 
 				pageFlip = this.currentMasterPage - 1;
 				pageFlip = pageFlip < 0 ? 2 : pageFlip;
@@ -348,7 +331,7 @@ var SwipeView = (function ($) {
 			} else {
 				this.page = -Math.floor(this.x / this.pageWidth);
 				this.currentMasterPage = mod(this.page + 1, 3);
-				this.pageIndex = this.pageIndex == this.options.numberOfPages - 1 ? 0 : this.pageIndex + 1;
+				this.pageIndex = this.pageIndex == len - 1 ? 0 : this.pageIndex + 1;
 
 				pageFlip = this.currentMasterPage + 1;
 				pageFlip = pageFlip > 2 ? 0 : pageFlip;
@@ -360,35 +343,34 @@ var SwipeView = (function ($) {
 			addClass(this.masterPages[this.currentMasterPage], 'swipview-active');
 			addClass(this.masterPages[pageFlip], 'swipeview-loading');
 
-			pageFlipIndex = mod(pageFlipIndex, this.options.numberOfPages);
+			pageFlipIndex = mod(pageFlipIndex, len);
 
 			// Index to be loaded in the newly flipped page
 			this.masterPages[pageFlip].dataset.upcomingPageIndex = pageFlipIndex;
 
 			newX = -this.page * this.pageWidth;
 
-			this.slider.style[transitionDuration] = Math.floor(500 * Math.abs(this.x - newX) / this.pageWidth) + 'ms';
+			slider.style[transitionDuration] = Math.floor(500 * Math.abs(this.x - newX) / this.pageWidth) + 'ms';
 
 			// Hide the next page if we decided to disable looping
-			if (!this.options.loop) {
-				this.masterPages[pageFlip].style.visibility = newX === 0 || newX == this.minX ? 'hidden' : '';
-			}
+			this.masterPages[pageFlip].style.visibility = newX === 0 || newX == this.minX ? 'hidden' : '';
 
 			this.__pos(newX);
-		},
+		}
 
-		__flip: function () {
-			this.dispatcher.fire('flip');
+		function flip () {
+			self.dispatcher.fire('flip');
 
 			for (var i = 0; i < 3; i++) {
-				removeClass(this.masterPages[i], 'swipeview-loading');
-				this.masterPages[i].dataset.pageIndex = this.masterPages[i].dataset.upcomingPageIndex;
+				removeClass(self.masterPages[i], 'swipeview-loading');
+				self.masterPages[i].dataset.pageIndex = self.masterPages[i].dataset.upcomingPageIndex;
 			}
-		},
-
-		__transitionEnd: function (e) {
-			if (e.target && this.slider && !this.options.hastyPageFlip) this.__flip();
 		}
+
+		function transitionEnd (e) {
+			if (e.target && slider) flip();
+		}
+		init(el);
 	};
 
 	function prefixStyle (style) {
