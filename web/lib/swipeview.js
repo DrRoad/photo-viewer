@@ -226,6 +226,7 @@ var SwipeView = (function () {
 			var startY = point.pageY;
 			var prevX = startX;
 			var prevY = startY;
+			var directionLocked = false;
 
 			slider.style[transitionDuration] = '0s';
 
@@ -250,8 +251,9 @@ var SwipeView = (function () {
 				}
 
 				// We are scrolling vertically, so skip SwipeView and give the control back to the browser
-				if (absY > absX) {
+				if (absY > absX && !directionLocked) {
 					inputhandler.off('move');
+					directionLocked = true;
 					return;
 				}
 
