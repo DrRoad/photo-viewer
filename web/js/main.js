@@ -69,6 +69,7 @@ function SlideView (page) {
 	wrapper.style.width = '100%';
 	wrapper.style.height = '100%';
 	wrapper.style.background = 'black';
+	wrapper.style.background = 'black url("../img/background.png")';
 	wrapper.style.color = 'white';
 
 	var swipeview = new SwipeView(wrapper);

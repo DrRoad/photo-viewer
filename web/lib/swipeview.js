@@ -134,12 +134,8 @@ var SwipeView = (function () {
 				s.width = '100%';
 				s.left = i * 100 + '%';
 				s.overflow = 'hidden';
-				if (i == -1) s.visibility = 'hidden';
 
 				page.dataset = {};
-				var pageIndex = i == -1 ? len - 1 : i;
-				page.dataset.pageIndex = pageIndex;
-				page.dataset.upcomingPageIndex = pageIndex;
 
 				slider.appendChild(page);
 				masters.push(page);
@@ -177,9 +173,20 @@ var SwipeView = (function () {
 		self.setPage = function (p) {
 			function positionMasters(a, b, c) {
 				var m = masters;
-				m[a].style.left = (page - 1) * 100 + '%';
-				m[b].style.left = page * 100 + '%';
-				m[c].style.left = (page + 1) * 100 + '%';
+				var sa = m[a].style;
+				var sb = m[b].style;
+				var sc = m[c].style;
+
+				sa.left = (page - 1) * 100 + '%';
+				if (page === 0) sa.visibility = 'hidden';
+				else sa.visibility = 'visible';
+
+				sb.left = page * 100 + '%';
+				sb.visibility = 'visible';
+
+				sc.left = (page + 1) * 100 + '%';
+				if (page === len - 1) sc.visibility = 'hidden';
+				else sc.visibility = 'visible';
 
 				m[a].dataset.upcomingPageIndex = page === 0 ? len - 1 : page - 1;
 				m[b].dataset.upcomingPageIndex = page;
