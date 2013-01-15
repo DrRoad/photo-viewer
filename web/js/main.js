@@ -86,7 +86,7 @@ function PhotoViewer (page, urls, index) {
 		wrapper.style.background = 'black url("../img/background.png")';
 		wrapper.style.color = 'white';
 
-		slideview = new SwipeView(wrapper);
+		slideview = new SlideView(wrapper);
 		slideview.on('flip', function () {
 			dispatcher.fire('flip', slideview.page());
 		});

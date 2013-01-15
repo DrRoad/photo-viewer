@@ -1,8 +1,11 @@
 /*!
- * SwipeView v1.0 ~ Copyright (c) 2012 Matteo Spinelli, http://cubiq.org
+ * SlideView 1.0 - For all your slick, sliding needs. Copyright (c) 2013 Justin McGirr
+ * http://github.com/crazy2be
+ *
+ * Based on code from SwipeView v1.0 ~ Copyright (c) 2012 Matteo Spinelli, http://cubiq.org
  * Released under MIT license, http://cubiq.org/license
  */
-var SwipeView = (function () {
+var SlideView = (function () {
 	function InputHandler (vendor) {
 		var self = this;
 		var hasTouch = 'ontouchstart' in window;
@@ -106,7 +109,7 @@ var SwipeView = (function () {
 	var transform = prefixStyle('transform');
 	var transitionDuration = prefixStyle('transitionDuration');
 
-	function SwipeView (wrapper) {
+	function SlideView (wrapper) {
 		var self = this;
 		var slider;
 		var len = 0;
@@ -118,7 +121,7 @@ var SwipeView = (function () {
 		var snapThreshold = 0;
 		var inputhandler = new InputHandler(vendor);
 		var source = function () {
-			throw "SwipeView source callback not provided!";
+			throw "SlideView source callback not provided!";
 		};
 
 		function init () {
@@ -313,7 +316,7 @@ return err;
 					return;
 				}
 
-				// We are scrolling vertically, so skip SwipeView and give the control back to the browser
+				// We are scrolling vertically, so skip SlideView and give the control back to the browser
 				if (absY > absX && !directionLocked) {
 					inputhandler.off('move');
 					return;
@@ -377,5 +380,5 @@ return err;
 		return vendor + style;
 	}
 
-	return SwipeView;
+	return SlideView;
 })();
