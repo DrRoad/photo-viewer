@@ -247,11 +247,6 @@ var SwipeView = (function () {
 				prevX = point.pageX;
 				prevY = point.pageY;
 
-				var newX = xPos + dx;
-				if (newX > 0 || newX < minX) {
-					newX = xPos + (dx / 2);
-				}
-
 				var absX = Math.abs(prevX - startX);
 				var absY = Math.abs(prevY - startY);
 
@@ -263,11 +258,17 @@ var SwipeView = (function () {
 				// We are scrolling vertically, so skip SwipeView and give the control back to the browser
 				if (absY > absX && !directionLocked) {
 					inputhandler.off('move');
-					directionLocked = true;
 					return;
+				}
+				directionLocked = true;
+
+				var newX = xPos + dx;
+				if (newX > 0 || newX < minX) {
+					newX = xPos + (dx / 2);
 				}
 
 				e.preventDefault();
+				inputhandler.off('start');
 				inputhandler.off('end').on('end', onEnd);
 				inputhandler.off('transitionEnd').on('transitionEnd', onTransitionEnd);
 				setPos(newX);
@@ -276,6 +277,7 @@ var SwipeView = (function () {
 			function onEnd (e, point) {
 				inputhandler.off('move');
 				inputhandler.off('end');
+				inputhandler.on('start', onStart);
 
 				prevX = point.pageX;
 				var deltaX = prevX - startX;
