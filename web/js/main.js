@@ -15,6 +15,7 @@ function Dispatcher () {
 		return res;
 	}
 	var events = {};
+
 	this.on = function (name, cb) {
 		var namebits = name.split('.');
 		var event = namebits[0];
@@ -26,6 +27,7 @@ function Dispatcher () {
 		});
 		return this;
 	}
+
 	this.off = function (name) {
 		var namebits = name.split('.');
 		var event = namebits[0];
@@ -40,6 +42,7 @@ function Dispatcher () {
 		}
 		return this;
 	}
+
 	this.fire = function (name /*, arguments */) {
 		var handlers = events[name] || [];
 		var args = Array.prototype.slice.call(arguments, 1);
@@ -54,6 +57,7 @@ function Dispatcher () {
 // DO NOT attempt to do anything to the app screen other than
 // through SlideView, or else things may (will probably) break.
 function SlideView (page) {
+	var self = this;
 	var wrapper = document.createElement('div');
 	wrapper.style.width = '100%';
 	wrapper.style.height = '100%';
@@ -97,14 +101,7 @@ function SlideView (page) {
 
 	function initSlides () {
 		for (var i = 0; i < 3; i++) {
-			var el = document.createElement('div');
-			el.style.width = window.innerWidth;
-			el.style.overflow = 'hidden';
-			el.style.width = '100%';
-			el.style.height = '100%';
-			el.className = 'slideview-slide';
-			swipeview.masterPages[i].appendChild(el);
-			el.appendChild(getElement(i - 1));
+			swipeview.masterPages[i].appendChild(getElement(i - 1));
 		}
 	}
 
@@ -115,11 +112,10 @@ function SlideView (page) {
 			if (d.upcomingPageIndex == d.pageIndex) continue;
 
 			try {
-				var slide = m.querySelector('.slideview-slide');
-				slide.innerHTML = '';
+				m.innerHTML = '';
 				console.log(d.upcomingPageIndex, d.pageIndex);
 				var el = getElement(d.upcomingPageIndex);
-				slide.appendChild(el);
+				m.appendChild(getElement(d.upcomingPageIndex));
 			} catch (e) {
 				debugger;
 			}
@@ -131,11 +127,14 @@ function SlideView (page) {
 	page.addEventListener('appShow', function () {
 		page.querySelector('.app-content').appendChild(wrapper);
 		swipeview.refreshSize();
-		swipeview.goToPage(index);
-	});
+	}, false);
 
 	page.addEventListener('appLayout', function () {
 		swipeview.refreshSize();
+	}, false);
+
+	page.addEventListener('appHide', function () {
+		self.destroy();
 	}, false);
 
 	var elements;

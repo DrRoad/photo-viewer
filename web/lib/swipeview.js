@@ -112,7 +112,7 @@ var SwipeView = (function ($) {
 		var self = this;
 		var wrapper = el;
 		var slider;
-		var len = 3;
+		var len = 0;
 
 		var dispatcher = new Dispatcher();
 		self.on = dispatcher.on;
@@ -143,6 +143,7 @@ var SwipeView = (function ($) {
 				s.height = '100%';
 				s.width = '100%';
 				s.left = i * 100 + '%';
+				s.overflow = 'hidden';
 				if (i == -1) s.visibility = 'hidden';
 
 				page.dataset = {};
@@ -163,9 +164,9 @@ var SwipeView = (function ($) {
 			inputhandler.on('end', onEnd);
 			inputhandler.on('resize', bind(self, 'refreshSize'));
 			inputhandler.on('transitionEnd', onTransitionEnd);
-			self.destroy = function () {
+			dispatcher.on('destroy', function () {
 				inputhandler.detach();
-			}
+			});
 
 			self.currentMasterPage = 0;
 			self.x = 0;
@@ -196,7 +197,7 @@ var SwipeView = (function ($) {
 
 		self.goToPage = function (p) {
 			var self = this;
-			function positionPage(a, b, c) {
+			function positionMasters(a, b, c) {
 				var m = self.masterPages;
 				m[a].style.left = (p - 1) * 100 + '%';
 				m[b].style.left = p * 100 + '%';
@@ -208,26 +209,33 @@ var SwipeView = (function ($) {
 			}
 			p = clamp(p, 0, len - 1);
 			self.page = p;
-			self.pageIndex = p;
 			slider.style[transitionDuration] = '0s';
 			setPos(-p * self.pageWidth);
 
 			self.currentMasterPage = mod(self.page + 1, 3);
 
 			if (self.currentMasterPage === 0) {
-				positionPage(2, 0, 1);
+				positionMasters(2, 0, 1);
 			} else if (self.currentMasterPage == 1) {
-				positionPage(0, 1, 2);
+				positionMasters(0, 1, 2);
 			} else {
-				positionPage(1, 2, 0);
+				positionMasters(1, 2, 0);
 			}
 
-			flip ();
+			flip();
+		}
+
+		self.destroy = function () {
+			dispatcher.fire('destroy');
 		}
 
 		function setPos (x) {
 			self.x = x;
-			slider.style[transform] = 'translate(' + x + 'px,0)';
+			// translateZ(0) does not affect our appearance, but hints to the
+			// renderer that it should hardware accelerate us, and thus makes
+			// things much faster and smoother (usually). For reference, see:
+			//     http://www.html5rocks.com/en/tutorials/speed/html5/
+			slider.style[transform] = 'translateX(' + x + 'px) translateZ(0)';
 		}
 
 		function onStart (e, point) {
@@ -287,69 +295,62 @@ var SwipeView = (function ($) {
 		function onEnd (e, point) {
 			if (!self.initiated) return;
 
-				 self.pointX = point.pageX;
+			self.pointX = point.pageX;
 			var dist = Math.abs(deltaX());
 
 			self.initiated = false;
 
 			if (!self.moved) return;
 
-				 var realDist = dist;
+			var realDist = dist;
 			if (self.x > 0 || self.x < self.minX) {
 				dist = 0;
 				realDist /= 3;
 			}
 
-			// Check if we exceeded the snap threshold
 			if (dist < self.snapThreshold) {
 				var val = Math.floor(300 * realDist / self.snapThreshold) + 'ms';
-				console.log(val);
-				slider.style[transitionDuration] = val;//'300ms';//
+				slider.style[transitionDuration] = val;
 				setPos(-self.page * self.pageWidth);
 				return;
 			}
 
-			var pageFlip;
-			var pageFlipIndex;
-			var className;
+			var moveMaster;
+			var newMasterIndex;
 
 			removeClass(self.masterPages[self.currentMasterPage], 'swipeview-active');
 
+			var newPage;
 			if (deltaX() > 0) {
-				self.page = -Math.ceil(self.x / self.pageWidth);
+				self.page = newPage = Math.floor(-self.x / self.pageWidth);
 				self.currentMasterPage = mod(self.page + 1, 3);
-				self.pageIndex = prevIndex(self.pageIndex);
 
-				pageFlip = self.currentMasterPage - 1;
-				pageFlip = pageFlip < 0 ? 2 : pageFlip;
-				self.masterPages[pageFlip].style.left = (self.page - 1) * 100 + '%';
+				moveMaster = mod(self.currentMasterPage - 1, 3);
+				self.masterPages[moveMaster].style.left = (self.page - 1) * 100 + '%';
 
-				pageFlipIndex = self.page - 1;
+				newMasterIndex = self.page - 1;
 			} else {
-				self.page = -Math.floor(self.x / self.pageWidth);
+				self.page = newPage = Math.ceil(-self.x / self.pageWidth);
 				self.currentMasterPage = mod(self.page + 1, 3);
-				self.pageIndex = nextIndex(self.pageIndex);
 
-				pageFlip = self.currentMasterPage + 1;
-				pageFlip = pageFlip > 2 ? 0 : pageFlip;
-				self.masterPages[pageFlip].style.left = (self.page + 1) * 100 + '%';
+				moveMaster = mod(self.currentMasterPage + 1, 3);
+				self.masterPages[moveMaster].style.left = (self.page + 1) * 100 + '%';
 
-				pageFlipIndex = self.page + 1;
+				newMasterIndex = self.page + 1;
 			}
-			pageFlipIndex = mod(pageFlipIndex, len);
+			newMasterIndex = mod(newMasterIndex, len);
 
 			addClass(self.masterPages[self.currentMasterPage], 'swipview-active');
-			addClass(self.masterPages[pageFlip], 'swipeview-loading');
+			addClass(self.masterPages[moveMaster], 'swipeview-loading');
 
 			// Index to be loaded in the newly flipped page
-			self.masterPages[pageFlip].dataset.upcomingPageIndex = pageFlipIndex;
+			self.masterPages[moveMaster].dataset.upcomingPageIndex = newMasterIndex;
 
 			newX = -self.page * self.pageWidth;
 
 			slider.style[transitionDuration] = Math.floor(500 * Math.abs(self.x - newX) / self.pageWidth) + 'ms';
 
-			// Hide the next page if we decided to disable looping
-			self.masterPages[pageFlip].style.visibility = newX === 0 || newX == self.minX ? 'hidden' : '';
+			self.masterPages[moveMaster].style.visibility = newX === 0 || newX == self.minX ? 'hidden' : '';
 
 			setPos(newX);
 		}
