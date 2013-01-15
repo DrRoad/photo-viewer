@@ -3,6 +3,7 @@
 // calling event handlers with arguments. Does not
 // support binding multiple events in a single call, or
 function Dispatcher () {
+	var self = this;
 	function intersection(a, b) {
 		var res = [];
 		for (var i = 0; i < a.length; i++) {
@@ -16,7 +17,7 @@ function Dispatcher () {
 	}
 	var events = {};
 
-	this.on = function (name, cb) {
+	self.on = function (name, cb) {
 		var namebits = name.split('.');
 		var event = namebits[0];
 		var namespaces = namebits.splice(1);
@@ -25,10 +26,10 @@ function Dispatcher () {
 			callback: cb,
 			namespaces: namespaces,
 		});
-		return this;
+		return self;
 	}
 
-	this.off = function (name) {
+	self.off = function (name) {
 		var namebits = name.split('.');
 		var event = namebits[0];
 		var namespaces = namebits.splice(1);
@@ -40,16 +41,16 @@ function Dispatcher () {
 				i--;
 			}
 		}
-		return this;
+		return self;
 	}
 
-	this.fire = function (name /*, arguments */) {
+	self.fire = function (name /*, arguments */) {
 		var handlers = events[name] || [];
 		var args = Array.prototype.slice.call(arguments, 1);
 		for (var i = 0; i < handlers.length; i++) {
 			handlers[i].callback.apply(null, args);
 		}
-		return this;
+		return self;
 	}
 }
 
@@ -61,6 +62,8 @@ function SlideView (page) {
 	var wrapper = document.createElement('div');
 	wrapper.style.width = '100%';
 	wrapper.style.height = '100%';
+	wrapper.style.background = 'black';
+	wrapper.style.color = 'white';
 
 	var swipeview = new SwipeView(wrapper);
 
@@ -100,14 +103,20 @@ function SlideView (page) {
 	}
 
 	function initSlides () {
+		var loader = document.createElement('div');
+		loader.style.background = 'red';
+		loader.style.width = '100%';
+		loader.style.height = '100%';
+// 		loader.style.background = "black url('../img/ajax-loader.gif') no-repeat center center";
+		swipeview.setLoading(loader);
 		for (var i = 0; i < 3; i++) {
-			swipeview.masterPages[i].appendChild(getElement(i - 1));
+			swipeview.masters[i].appendChild(getElement(i - 1));
 		}
 	}
 
 	swipeview.on('flip', function () {
 		for (var i = 0; i < 3; i++) {
-			var m = swipeview.masterPages[i];
+			var m = swipeview.masters[i];
 			var d = m.dataset;
 			if (d.upcomingPageIndex == d.pageIndex) continue;
 
@@ -120,10 +129,9 @@ function SlideView (page) {
 				debugger;
 			}
 		}
-		dispatcher.fire('change', swipeview.page);
+		dispatcher.fire('change', swipeview.page());
 	});
 
-	var index = 0;
 	page.addEventListener('appShow', function () {
 		page.querySelector('.app-content').appendChild(wrapper);
 		swipeview.refreshSize();
@@ -140,14 +148,14 @@ function SlideView (page) {
 	var elements;
 
 	var dispatcher = new Dispatcher();
-	this.on = dispatcher.on;
-	this.off = dispatcher.off;
+	self.on = dispatcher.on;
+	self.off = dispatcher.off;
 
 	// List can be either a list of slides, or a function which can return the ith
 	// element in an arbitrary list upon demand. Both the list and the function can
 	// contian/return elements, in which case each element is taken to represent a
 	// slide, or strings, in whcih case each element is taken to represent an image.
-	this.source = function (newSource) {
+	self.setSource = function (newSource) {
 		var len;
 		len = 100000000;
 		if (typeof newSource === 'function') {
@@ -163,30 +171,33 @@ function SlideView (page) {
 		} else {
 			throw "Error: Unsupported argument to SlideView.source: '" + newSource + "'";
 		}
-		swipeview.updatePageCount(len);
+		swipeview.setLen(len);
 		initSlides();
-		return this;
+		return self;
+	}
+
+	self.setLoading = function (newLoadingElm) {
+		swipeview.setLoading(newLoadingElm);
 	}
 
 	var loadElm;
-	this.loader = function (newLoader) {
+	self.loader = function (newLoader) {
 		loadElm = newLoader;
 	}
 
-	this.page = function (newPage) {
+	self.page = function (newPage) {
 		if (newPage === undefined) {
-			return index;
+			return swipeview.page();
 		}
 		if (typeof newPage !== 'number') {
 			throw "Give me a number please!";
 		}
-		swipeview.goToPage(newPage);
-		index = newPage;
-		return this;
+		swipeview.setPage(newPage);
+		return self;
 	}
 
 	// TODO: DESTROY
-	this.destroy = function () {
+	self.destroy = function () {
 		throw "Error: SlideView.destroy() is not yet implemented. Bug Justin.";
 	}
 }
@@ -195,7 +206,7 @@ function SlideView (page) {
 	App.populator('viewer', function (page, data) {
 		var urls  = data.images;
 		var sv = new SlideView(page);
-		sv.source(urls).page(parseInt(data.index, 10)).on('change', function (i) {
+		sv.setSource(urls).page(parseInt(data.index, 10)).on('change', function (i) {
 			data.index = i;
 			App.saveStack();
 		});

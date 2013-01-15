@@ -4,16 +4,3 @@ body img {
 	max-width: 100%;
 	max-height: 100%;
 }
-
-.app-viewer .app-content {
-	background-color: black;
-	color: white;
-}
-
-.swipeview-loading * {
-	display: none;
-}
-
-.swipeview-loading {
-	background: black url('../img/ajax-loader.gif') no-repeat center center;
-}

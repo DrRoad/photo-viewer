@@ -108,21 +108,20 @@ var SwipeView = (function ($) {
 	var transform = prefixStyle('transform');
 	var transitionDuration = prefixStyle('transitionDuration');
 
-	function SwipeView (el) {
+	function SwipeView (wrapper) {
 		var self = this;
-		var wrapper = el;
 		var slider;
 		var len = 0;
-
-		var dispatcher = new Dispatcher();
-		self.on = dispatcher.on;
-		self.off = dispatcher.off;
+		var masters = self.masters = [];
+		var activeMaster = 0;
+		var xPos = 0;
+		var minX = 0;
+		var page = 0;
+		var snapThreshold = 0;
 
 		function init () {
 			wrapper.style.overflow = 'hidden';
 			wrapper.style.postition = 'relative';
-
-			self.masterPages = [];
 
 			slider = document.createElement('div');
 			var s = slider.style;
@@ -152,10 +151,8 @@ var SwipeView = (function ($) {
 				page.dataset.upcomingPageIndex = pageIndex;
 
 				slider.appendChild(page);
-				self.masterPages.push(page);
+				masters.push(page);
 			}
-
-			addClass(self.masterPages[1], 'swipeview-active');
 
 			var inputhandler = new InputHandler(vendor);
 			inputhandler.attach(wrapper, slider);
@@ -167,38 +164,33 @@ var SwipeView = (function ($) {
 			dispatcher.on('destroy', function () {
 				inputhandler.detach();
 			});
-
-			self.currentMasterPage = 0;
-			self.x = 0;
-			self.page = 0;
-			self.pageIndex = 0;
 		}
 
-		function deltaX () {
-			return self.pointX - self.startX;
-		}
-
-		function deltaY () {
-			return self.pointY - self.startY;
-		}
+		var dispatcher = new Dispatcher();
+		self.on = dispatcher.on;
+		self.off = dispatcher.off;
 
 		self.refreshSize = function () {
-			self.pageWidth = wrapper.clientWidth;
-			self.minX = (1 - len) * self.pageWidth;
-			self.snapThreshold = Math.round(self.pageWidth * 0.15);
+			pageWidth = wrapper.clientWidth;
+			minX = (1 - len) * pageWidth;
+			snapThreshold = Math.round(pageWidth * 0.15);
 			slider.style[transitionDuration] = '0s';
-			setPos(-self.page * self.pageWidth);
+			setPos(-page * pageWidth);
 		}
 
-		self.updatePageCount = function (n) {
+		self.setLen = function (n) {
 			len = n;
 			self.refreshSize();
 		}
 
-		self.goToPage = function (p) {
+		self.page = function () {
+			return page;
+		}
+
+		self.setPage = function (p) {
 			var self = this;
 			function positionMasters(a, b, c) {
-				var m = self.masterPages;
+				var m = masters;
 				m[a].style.left = (p - 1) * 100 + '%';
 				m[b].style.left = p * 100 + '%';
 				m[c].style.left = (p + 1) * 100 + '%';
@@ -208,15 +200,15 @@ var SwipeView = (function ($) {
 				m[c].dataset.upcomingPageIndex = p === len - 1 ? 0 : p + 1;
 			}
 			p = clamp(p, 0, len - 1);
-			self.page = p;
+			page = p;
 			slider.style[transitionDuration] = '0s';
-			setPos(-p * self.pageWidth);
+			setPos(-p * pageWidth);
 
-			self.currentMasterPage = mod(self.page + 1, 3);
+			activeMaster = mod(page + 1, 3);
 
-			if (self.currentMasterPage === 0) {
+			if (activeMaster === 0) {
 				positionMasters(2, 0, 1);
-			} else if (self.currentMasterPage == 1) {
+			} else if (activeMaster == 1) {
 				positionMasters(0, 1, 2);
 			} else {
 				positionMasters(1, 2, 0);
@@ -225,12 +217,17 @@ var SwipeView = (function ($) {
 			flip();
 		}
 
+		var loadingElm;
+		self.setLoading = function (newLoadingElm) {
+			loadingElm = newLoadingElm;
+		}
+
 		self.destroy = function () {
 			dispatcher.fire('destroy');
 		}
 
 		function setPos (x) {
-			self.x = x;
+			xPos = x;
 			// translateZ(0) does not affect our appearance, but hints to the
 			// renderer that it should hardware accelerate us, and thus makes
 			// things much faster and smoother (usually). For reference, see:
@@ -238,35 +235,39 @@ var SwipeView = (function ($) {
 			slider.style[transform] = 'translateX(' + x + 'px) translateZ(0)';
 		}
 
-		function onStart (e, point) {
-			if (self.initiated) return;
+		// Only for events
+		var startX = 0;
+		var startY = 0;
+		var prevX = 0;
+		var prevY = 0;
+		var moveStarted = false;
 
-			self.initiated = true;
-			self.moved = false;
-			self.thresholdExceeded = false;
-			self.startX = point.pageX;
-			self.startY = point.pageY;
-			self.pointX = point.pageX;
-			self.pointY = point.pageY;
-			self.directionLocked = false;
+		function onStart (e, point) {
+			// We only want ONE touch event.
+			if (moveStarted) return;
+
+			startX = prevX = point.pageX;
+			startY = prevY = point.pageY;
+			directionLocked = false;
+			moveStarted = true;
 
 			slider.style[transitionDuration] = '0s';
 		}
 
 		function onMove (e, point) {
-			if (!self.initiated) return;
+			if (!moveStarted) return;
 
-			var dx = point.pageX - self.pointX;
-			var newX = self.x + dx;
-			if (newX > 0 || newX < self.minX) {
-				newX = self.x + (dx / 2);
+			var dx = point.pageX - prevX;
+			prevX = point.pageX;
+			prevY = point.pageY;
+
+			var newX = xPos + dx;
+			if (newX > 0 || newX < minX) {
+				newX = xPos + (dx / 2);
 			}
 
-			self.moved = true;
-			self.pointX = point.pageX;
-			self.pointY = point.pageY;
-			var absX = Math.abs(deltaX());
-			var absY = Math.abs(deltaY());
+			var absX = Math.abs(prevX - startX);
+			var absY = Math.abs(prevY - startY);
 
 			// We take a 10px buffer to figure out the direction of the swipe
 			if (absX < 10 && absY < 10) {
@@ -274,83 +275,69 @@ var SwipeView = (function ($) {
 			}
 
 			// We are scrolling vertically, so skip SwipeView and give the control back to the browser
-			if (!self.directionLocked && absY > absX) {
-				self.initiated = false;
+			if (!directionLocked && absY > absX) {
+				moveStarted = false;
 				return;
 			}
 
 			e.preventDefault();
 
-			self.directionLocked = true;
-
-			if (absX >= self.snapThreshold) {
-				self.thresholdExceeded = true;
-			} else {
-				self.thresholdExceeded = false;
-			}
+			directionLocked = true;
 
 			setPos(newX);
 		}
 
 		function onEnd (e, point) {
-			if (!self.initiated) return;
+			if (!moveStarted) return;
+			moveStarted = false;
 
-			self.pointX = point.pageX;
-			var dist = Math.abs(deltaX());
+			var deltaX = point.pageX - startX;
+			var dist = Math.abs(deltaX);
 
-			self.initiated = false;
+			if (xPos > 0 || xPos < minX) dist *= 0.15;
 
-			if (!self.moved) return;
-
-			var realDist = dist;
-			if (self.x > 0 || self.x < self.minX) {
-				dist = 0;
-				realDist /= 3;
-			}
-
-			if (dist < self.snapThreshold) {
-				var val = Math.floor(300 * realDist / self.snapThreshold) + 'ms';
-				slider.style[transitionDuration] = val;
-				setPos(-self.page * self.pageWidth);
+			if (dist < snapThreshold) {
+				var time = Math.floor(300 * dist / snapThreshold) + 'ms';
+				slider.style[transitionDuration] = time;
+				setPos(-page * pageWidth);
 				return;
 			}
 
 			var moveMaster;
 			var newMasterIndex;
 
-			removeClass(self.masterPages[self.currentMasterPage], 'swipeview-active');
-
 			var newPage;
-			if (deltaX() > 0) {
-				self.page = newPage = Math.floor(-self.x / self.pageWidth);
-				self.currentMasterPage = mod(self.page + 1, 3);
+			if (deltaX > 0) {
+				page = newPage = Math.floor(-xPos / pageWidth);
+				activeMaster = mod(page + 1, 3);
 
-				moveMaster = mod(self.currentMasterPage - 1, 3);
-				self.masterPages[moveMaster].style.left = (self.page - 1) * 100 + '%';
+				moveMaster = mod(activeMaster - 1, 3);
+				masters[moveMaster].style.left = (page - 1) * 100 + '%';
 
-				newMasterIndex = self.page - 1;
+				newMasterIndex = page - 1;
 			} else {
-				self.page = newPage = Math.ceil(-self.x / self.pageWidth);
-				self.currentMasterPage = mod(self.page + 1, 3);
+				page = newPage = Math.ceil(-xPos / pageWidth);
+				activeMaster = mod(page + 1, 3);
 
-				moveMaster = mod(self.currentMasterPage + 1, 3);
-				self.masterPages[moveMaster].style.left = (self.page + 1) * 100 + '%';
+				moveMaster = mod(activeMaster + 1, 3);
+				masters[moveMaster].style.left = (page + 1) * 100 + '%';
 
-				newMasterIndex = self.page + 1;
+				newMasterIndex = page + 1;
 			}
 			newMasterIndex = mod(newMasterIndex, len);
 
-			addClass(self.masterPages[self.currentMasterPage], 'swipview-active');
-			addClass(self.masterPages[moveMaster], 'swipeview-loading');
+			masterCont(moveMaster, loadingElm);
+// 			addClass(masters[moveMaster], 'swipeview-loading');
 
 			// Index to be loaded in the newly flipped page
-			self.masterPages[moveMaster].dataset.upcomingPageIndex = newMasterIndex;
+			masters[moveMaster].dataset.upcomingPageIndex = newMasterIndex;
 
-			newX = -self.page * self.pageWidth;
+			newX = -page * pageWidth;
 
-			slider.style[transitionDuration] = Math.floor(500 * Math.abs(self.x - newX) / self.pageWidth) + 'ms';
+			slider.style[transitionDuration] = Math.floor(500 * Math.abs(xPos - newX) / pageWidth) + 'ms';
 
-			self.masterPages[moveMaster].style.visibility = newX === 0 || newX == self.minX ? 'hidden' : '';
+			// Hide end pages
+			masters[moveMaster].style.visibility = newX === 0 || newX == minX ? 'hidden' : '';
 
 			setPos(newX);
 		}
@@ -371,15 +358,20 @@ var SwipeView = (function ($) {
 			dispatcher.fire('flip');
 
 			for (var i = 0; i < 3; i++) {
-				removeClass(self.masterPages[i], 'swipeview-loading');
-				self.masterPages[i].dataset.pageIndex = self.masterPages[i].dataset.upcomingPageIndex;
+// 				removeClass(masters[i], 'swipeview-loading');
+				masters[i].dataset.pageIndex = masters[i].dataset.upcomingPageIndex;
 			}
 		}
-		init(el);
+
+		function masterCont (n, elm) {
+			masters[n].innerHTML = '';
+			masters[n].appendChild(elm);
+		}
+		init();
 	};
 
 	function prefixStyle (style) {
-		if ( vendor === '' ) return style;
+		if (vendor === '') return style;
 
 		style = style.charAt(0).toUpperCase() + style.substr(1);
 		return vendor + style;
