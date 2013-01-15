@@ -148,7 +148,6 @@ var SwipeView = (function () {
 			inputhandler.attach(wrapper, slider);
 			inputhandler.on('start', onStart);
 			inputhandler.on('resize', bind(self, 'refreshSize'));
-			inputhandler.on('transitionEnd', onTransitionEnd);
 			dispatcher.on('destroy', function () {
 				inputhandler.detach();
 			});
@@ -200,7 +199,11 @@ var SwipeView = (function () {
 				positionMasters(1, 2, 0);
 			}
 
-			flip();
+			dispatcher.fire('flip');
+
+			for (var i = 0; i < 3; i++) {
+				masters[i].dataset.pageIndex = masters[i].dataset.upcomingPageIndex;
+			}
 		}
 
 		var loadingElm;
@@ -259,6 +262,7 @@ var SwipeView = (function () {
 
 				e.preventDefault();
 				inputhandler.off('end').on('end', onEnd);
+				inputhandler.off('transitionEnd').on('transitionEnd', onTransitionEnd);
 				setPos(newX);
 			}
 
@@ -266,7 +270,8 @@ var SwipeView = (function () {
 				inputhandler.off('move');
 				inputhandler.off('end');
 
-				var deltaX = point.pageX - startX;
+				prevX = point.pageX;
+				var deltaX = prevX - startX;
 				var dist = Math.abs(deltaX);
 
 				if (xPos > 0 || xPos < minX) dist *= 0.15;
@@ -278,61 +283,22 @@ var SwipeView = (function () {
 					return;
 				}
 
-				var moveMaster;
-				var newMasterIndex;
-
-				var newPage;
 				if (deltaX > 0) {
-					page = newPage = Math.floor(-xPos / pageWidth);
-					activeMaster = mod(page + 1, 3);
-
-					moveMaster = mod(activeMaster - 1, 3);
-					masters[moveMaster].style.left = (page - 1) * 100 + '%';
-
-					newMasterIndex = page - 1;
+					page = Math.floor(-xPos / pageWidth);
 				} else {
-					page = newPage = Math.ceil(-xPos / pageWidth);
-					activeMaster = mod(page + 1, 3);
-
-					moveMaster = mod(activeMaster + 1, 3);
-					masters[moveMaster].style.left = (page + 1) * 100 + '%';
-
-					newMasterIndex = page + 1;
+					page = Math.ceil(-xPos / pageWidth);
 				}
-				newMasterIndex = mod(newMasterIndex, len);
-
-				masterCont(moveMaster, loadingElm);
-
-				// Index to be loaded in the newly flipped page
-				masters[moveMaster].dataset.upcomingPageIndex = newMasterIndex;
 
 				newX = -page * pageWidth;
 
 				slider.style[transitionDuration] = Math.floor(500 * Math.abs(xPos - newX) / pageWidth) + 'ms';
 
-				// Hide end pages
-				masters[moveMaster].style.visibility = newX === 0 || newX == minX ? 'hidden' : '';
-
 				setPos(newX);
 			}
-		}
 
-
-		function onTransitionEnd (e) {
-			if (e.target && slider) flip();
-		}
-
-		function flip () {
-			dispatcher.fire('flip');
-
-			for (var i = 0; i < 3; i++) {
-				masters[i].dataset.pageIndex = masters[i].dataset.upcomingPageIndex;
+			function onTransitionEnd (e) {
+				self.setPage(page);
 			}
-		}
-
-		function masterCont (n, elm) {
-			masters[n].innerHTML = '';
-			masters[n].appendChild(elm);
 		}
 		init();
 	};
