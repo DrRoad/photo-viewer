@@ -15,6 +15,11 @@ function Dispatcher () {
 		}
 		return res;
 	}
+	// JavaScript does reference equality for arrays by default. See
+	// http://stackoverflow.com/questions/3115982/how-to-check-javascript-array-equals
+	function arrEqual(a, b) {
+		return a <= b && b >= a;
+	}
 	var events = {};
 
 	self.on = function (name, cb) {
@@ -34,9 +39,9 @@ function Dispatcher () {
 		var event = namebits[0];
 		var namespaces = namebits.splice(1);
 
-		for (var i = 0; i < events[event].length; i++) {
+		for (var i = 0; i < (events[event] || []).length; i++) {
 			var ev = events[event][i];
-			if (intersection(ev, namespaces).length > 0) {
+			if (arrEqual(intersection(ev.namespaces, namespaces), namespaces)) {
 				events[event].splice(i, 1);
 				i--;
 			}
@@ -45,6 +50,7 @@ function Dispatcher () {
 	}
 
 	self.fire = function (name /*, arguments */) {
+// 		if (name == 'end') debugger;
 		var handlers = events[name] || [];
 		var args = Array.prototype.slice.call(arguments, 1);
 		for (var i = 0; i < handlers.length; i++) {

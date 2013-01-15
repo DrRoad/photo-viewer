@@ -108,6 +108,7 @@ var SwipeView = (function () {
 		var minX = 0;
 		var page = 0;
 		var snapThreshold = 0;
+		var inputhandler = new InputHandler(vendor);
 
 		function init () {
 			wrapper.style.overflow = 'hidden';
@@ -144,11 +145,8 @@ var SwipeView = (function () {
 				masters.push(page);
 			}
 
-			var inputhandler = new InputHandler(vendor);
 			inputhandler.attach(wrapper, slider);
 			inputhandler.on('start', onStart);
-			inputhandler.on('move', onMove);
-			inputhandler.on('end', onEnd);
 			inputhandler.on('resize', bind(self, 'refreshSize'));
 			inputhandler.on('transitionEnd', onTransitionEnd);
 			dispatcher.on('destroy', function () {
@@ -178,21 +176,19 @@ var SwipeView = (function () {
 		}
 
 		self.setPage = function (p) {
-			var self = this;
 			function positionMasters(a, b, c) {
 				var m = masters;
-				m[a].style.left = (p - 1) * 100 + '%';
-				m[b].style.left = p * 100 + '%';
-				m[c].style.left = (p + 1) * 100 + '%';
+				m[a].style.left = (page - 1) * 100 + '%';
+				m[b].style.left = page * 100 + '%';
+				m[c].style.left = (page + 1) * 100 + '%';
 
-				m[a].dataset.upcomingPageIndex = p === 0 ? len - 1 : p - 1;
-				m[b].dataset.upcomingPageIndex = p;
-				m[c].dataset.upcomingPageIndex = p === len - 1 ? 0 : p + 1;
+				m[a].dataset.upcomingPageIndex = page === 0 ? len - 1 : page - 1;
+				m[b].dataset.upcomingPageIndex = page;
+				m[c].dataset.upcomingPageIndex = page === len - 1 ? 0 : page + 1;
 			}
-			p = clamp(p, 0, len - 1);
-			page = p;
+			page = clamp(p, 0, len - 1);
 			slider.style[transitionDuration] = '0s';
-			setPos(-p * pageWidth);
+			setPos(-page * pageWidth);
 
 			activeMaster = mod(page + 1, 3);
 
@@ -225,111 +221,100 @@ var SwipeView = (function () {
 			slider.style[transform] = 'translateX(' + x + 'px) translateZ(0)';
 		}
 
-		// Only for events
-		var startX = 0;
-		var startY = 0;
-		var prevX = 0;
-		var prevY = 0;
-		var moveStarted = false;
-
 		function onStart (e, point) {
-			// We only want ONE touch event.
-			if (moveStarted) return;
-
-			startX = prevX = point.pageX;
-			startY = prevY = point.pageY;
-			directionLocked = false;
-			moveStarted = true;
+			var startX = point.pageX;
+			var startY = point.pageY;
+			var prevX = startX;
+			var prevY = startY;
 
 			slider.style[transitionDuration] = '0s';
+
+			inputhandler.on('move', onMove);
+
+			function onMove (e, point) {
+				var dx = point.pageX - prevX;
+				prevX = point.pageX;
+				prevY = point.pageY;
+
+				var newX = xPos + dx;
+				if (newX > 0 || newX < minX) {
+					newX = xPos + (dx / 2);
+				}
+
+				var absX = Math.abs(prevX - startX);
+				var absY = Math.abs(prevY - startY);
+
+				// We take a 10px buffer to figure out the direction of the swipe
+				if (absX < 10 && absY < 10) {
+					return;
+				}
+
+				// We are scrolling vertically, so skip SwipeView and give the control back to the browser
+				if (absY > absX) {
+					inputhandler.off('move');
+					return;
+				}
+
+				e.preventDefault();
+				inputhandler.off('end').on('end', onEnd);
+				setPos(newX);
+			}
+
+			function onEnd (e, point) {
+				inputhandler.off('move');
+				inputhandler.off('end');
+
+				var deltaX = point.pageX - startX;
+				var dist = Math.abs(deltaX);
+
+				if (xPos > 0 || xPos < minX) dist *= 0.15;
+
+				if (dist < snapThreshold) {
+					var time = Math.floor(300 * dist / snapThreshold) + 'ms';
+					slider.style[transitionDuration] = time;
+					setPos(-page * pageWidth);
+					return;
+				}
+
+				var moveMaster;
+				var newMasterIndex;
+
+				var newPage;
+				if (deltaX > 0) {
+					page = newPage = Math.floor(-xPos / pageWidth);
+					activeMaster = mod(page + 1, 3);
+
+					moveMaster = mod(activeMaster - 1, 3);
+					masters[moveMaster].style.left = (page - 1) * 100 + '%';
+
+					newMasterIndex = page - 1;
+				} else {
+					page = newPage = Math.ceil(-xPos / pageWidth);
+					activeMaster = mod(page + 1, 3);
+
+					moveMaster = mod(activeMaster + 1, 3);
+					masters[moveMaster].style.left = (page + 1) * 100 + '%';
+
+					newMasterIndex = page + 1;
+				}
+				newMasterIndex = mod(newMasterIndex, len);
+
+				masterCont(moveMaster, loadingElm);
+
+				// Index to be loaded in the newly flipped page
+				masters[moveMaster].dataset.upcomingPageIndex = newMasterIndex;
+
+				newX = -page * pageWidth;
+
+				slider.style[transitionDuration] = Math.floor(500 * Math.abs(xPos - newX) / pageWidth) + 'ms';
+
+				// Hide end pages
+				masters[moveMaster].style.visibility = newX === 0 || newX == minX ? 'hidden' : '';
+
+				setPos(newX);
+			}
 		}
 
-		function onMove (e, point) {
-			if (!moveStarted) return;
-
-			var dx = point.pageX - prevX;
-			prevX = point.pageX;
-			prevY = point.pageY;
-
-			var newX = xPos + dx;
-			if (newX > 0 || newX < minX) {
-				newX = xPos + (dx / 2);
-			}
-
-			var absX = Math.abs(prevX - startX);
-			var absY = Math.abs(prevY - startY);
-
-			// We take a 10px buffer to figure out the direction of the swipe
-			if (absX < 10 && absY < 10) {
-				return;
-			}
-
-			// We are scrolling vertically, so skip SwipeView and give the control back to the browser
-			if (!directionLocked && absY > absX) {
-				moveStarted = false;
-				return;
-			}
-
-			e.preventDefault();
-
-			directionLocked = true;
-
-			setPos(newX);
-		}
-
-		function onEnd (e, point) {
-			if (!moveStarted) return;
-			moveStarted = false;
-
-			var deltaX = point.pageX - startX;
-			var dist = Math.abs(deltaX);
-
-			if (xPos > 0 || xPos < minX) dist *= 0.15;
-
-			if (dist < snapThreshold) {
-				var time = Math.floor(300 * dist / snapThreshold) + 'ms';
-				slider.style[transitionDuration] = time;
-				setPos(-page * pageWidth);
-				return;
-			}
-
-			var moveMaster;
-			var newMasterIndex;
-
-			var newPage;
-			if (deltaX > 0) {
-				page = newPage = Math.floor(-xPos / pageWidth);
-				activeMaster = mod(page + 1, 3);
-
-				moveMaster = mod(activeMaster - 1, 3);
-				masters[moveMaster].style.left = (page - 1) * 100 + '%';
-
-				newMasterIndex = page - 1;
-			} else {
-				page = newPage = Math.ceil(-xPos / pageWidth);
-				activeMaster = mod(page + 1, 3);
-
-				moveMaster = mod(activeMaster + 1, 3);
-				masters[moveMaster].style.left = (page + 1) * 100 + '%';
-
-				newMasterIndex = page + 1;
-			}
-			newMasterIndex = mod(newMasterIndex, len);
-
-			masterCont(moveMaster, loadingElm);
-
-			// Index to be loaded in the newly flipped page
-			masters[moveMaster].dataset.upcomingPageIndex = newMasterIndex;
-
-			newX = -page * pageWidth;
-
-			slider.style[transitionDuration] = Math.floor(500 * Math.abs(xPos - newX) / pageWidth) + 'ms';
-
-			// Hide end pages
-			masters[moveMaster].style.visibility = newX === 0 || newX == minX ? 'hidden' : '';
-
-			setPos(newX);
-		}
 
 		function onTransitionEnd (e) {
 			if (e.target && slider) flip();
