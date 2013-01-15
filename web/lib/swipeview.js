@@ -2,84 +2,84 @@
  * SwipeView v1.0 ~ Copyright (c) 2012 Matteo Spinelli, http://cubiq.org
  * Released under MIT license, http://cubiq.org/license
  */
-function InputHandler (vendor) {
-	var self = this;
-	var hasTouch = 'ontouchstart' in window;
-	var resizeEvent = 'onorientationchange' in window ? 'orientationchange' : 'resize';
-	var startEvent = hasTouch ? 'touchstart' : 'mousedown';
-	var moveEvent = hasTouch ? 'touchmove' : 'mousemove';
-	var endEvent = hasTouch ? 'touchend' : 'mouseup';
-	var cancelEvent = hasTouch ? 'touchcancel' : 'mouseup';
-	var transitionEndEvent = (function () {
-		if ( vendor === false ) return false;
+var SwipeView = (function () {
+	function InputHandler (vendor) {
+		var self = this;
+		var hasTouch = 'ontouchstart' in window;
+		var resizeEvent = 'onorientationchange' in window ? 'orientationchange' : 'resize';
+		var startEvent = hasTouch ? 'touchstart' : 'mousedown';
+		var moveEvent = hasTouch ? 'touchmove' : 'mousemove';
+		var endEvent = hasTouch ? 'touchend' : 'mouseup';
+		var cancelEvent = hasTouch ? 'touchcancel' : 'mouseup';
+		var transitionEndEvent = (function () {
+			if ( vendor === false ) return false;
 
-		var transitionEnd = {
-			''			: 'transitionend',
-			'webkit'	: 'webkitTransitionEnd',
-			'Moz'		: 'transitionend',
-			'O'			: 'oTransitionEnd',
-			'ms'		: 'MSTransitionEnd'
+			var transitionEnd = {
+				''			: 'transitionend',
+				'webkit'	: 'webkitTransitionEnd',
+				'Moz'		: 'transitionend',
+				'O'			: 'oTransitionEnd',
+				'ms'		: 'MSTransitionEnd'
+			};
+
+			return transitionEnd[vendor];
+		})();
+
+		function handleEvent (e) {
+			var t = e.type;
+			if (t == startEvent) dispatcher.fire('start', e, hasTouch ? e.touches[0] : e);
+			else if (t == moveEvent) dispatcher.fire('move', e, hasTouch ? e.touches[0] : e);
+			else if (t == cancelEvent) dispatcher.fire('end', e, hasTouch ? e.changedTouches[0] : e);
+			else if (t == endEvent) dispatcher.fire('end', e, hasTouch ? e.changedTouches[0] : e);
+			else if (t == resizeEvent) dispatcher.fire('resize', e);
+			else if (t == transitionEndEvent) dispatcher.fire('transitionEnd', e);
+		}
+
+		var dispatcher = new Dispatcher();
+		this.on = dispatcher.on;
+		this.off = dispatcher.off;
+
+		var wrapper;
+		var slider;
+		this.attach = function (newWrapper, newSlider) {
+			if (wrapper || slider) this.detach();
+			wrapper = newWrapper;
+			slider = newSlider;
+			window.addEventListener(resizeEvent, handleEvent, false);
+			wrapper.addEventListener(startEvent, handleEvent, false);
+			wrapper.addEventListener(moveEvent, handleEvent, false);
+			wrapper.addEventListener(endEvent, handleEvent, false);
+			slider.addEventListener(transitionEndEvent, handleEvent, false);
+			return this;
+		}
+
+		this.detach = function () {
+			window.removeEventListener(resizeEvent, handleEvent, false);
+			wrapper.removeEventListener(startEvent, handleEvent, false);
+			wrapper.removeEventListener(moveEvent, handleEvent, false);
+			wrapper.removeEventListener(endEvent, handleEvent, false);
+			slider.removeEventListener(transitionEndEvent, handleEvent, false);
+			return this;
+		}
+	}
+
+	// From http://fitzgeraldnick.com/weblog/26/ with slight modifications
+	function bind(thisCtx, name /*, variadic args to curry */) {
+		var args = Array.prototype.slice.call(arguments, 2);
+		return function () {
+			return thisCtx[name].apply(thisCtx, args.concat(Array.prototype.slice.call(arguments)));
 		};
-
-		return transitionEnd[vendor];
-	})();
-
-	function handleEvent (e) {
-		var t = e.type;
-		if (t == startEvent) dispatcher.fire('start', e, hasTouch ? e.touches[0] : e);
-		else if (t == moveEvent) dispatcher.fire('move', e, hasTouch ? e.touches[0] : e);
-		else if (t == cancelEvent) dispatcher.fire('end', e, hasTouch ? e.changedTouches[0] : e);
-		else if (t == endEvent) dispatcher.fire('end', e, hasTouch ? e.changedTouches[0] : e);
-		else if (t == resizeEvent) dispatcher.fire('resize', e);
-		else if (t == transitionEndEvent) dispatcher.fire('transitionEnd', e);
 	}
 
-	var dispatcher = new Dispatcher();
-	this.on = dispatcher.on;
-	this.off = dispatcher.off;
-
-	var wrapper;
-	var slider;
-	this.attach = function (newWrapper, newSlider) {
-		if (wrapper || slider) this.detach();
-		wrapper = newWrapper;
-		slider = newSlider;
-		window.addEventListener(resizeEvent, handleEvent, false);
-		wrapper.addEventListener(startEvent, handleEvent, false);
-		wrapper.addEventListener(moveEvent, handleEvent, false);
-		wrapper.addEventListener(endEvent, handleEvent, false);
-		slider.addEventListener(transitionEndEvent, handleEvent, false);
-		return this;
+	// Mod in javascript is messed up for negative numbers.
+	function mod(a, b) {
+		return ((a % b) + b) % b;
 	}
 
-	this.detach = function () {
-		window.removeEventListener(resizeEvent, handleEvent, false);
-		wrapper.removeEventListener(startEvent, handleEvent, false);
-		wrapper.removeEventListener(moveEvent, handleEvent, false);
-		wrapper.removeEventListener(endEvent, handleEvent, false);
-		slider.removeEventListener(transitionEndEvent, handleEvent, false);
-		return this;
+	function clamp(n, min, max) {
+		return Math.max(min, Math.min(max, n));
 	}
-}
 
-// From http://fitzgeraldnick.com/weblog/26/ with slight modifications
-function bind(thisCtx, name /*, variadic args to curry */) {
-	var args = Array.prototype.slice.call(arguments, 2);
-	return function () {
-		return thisCtx[name].apply(thisCtx, args.concat(Array.prototype.slice.call(arguments)));
-	};
-}
-
-// Mod in javascript is messed up for negative numbers.
-function mod(a, b) {
-	return ((a % b) + b) % b;
-}
-
-function clamp(n, min, max) {
-	return Math.max(min, Math.min(max, n));
-}
-
-var SwipeView = (function ($) {
 	var dummyStyle = document.createElement('div').style;
 	var vendor = (function () {
 		var vendors = 't,webkitT,MozT,msT,OT'.split(',');
@@ -95,16 +95,6 @@ var SwipeView = (function ($) {
 		return false;
 	})();
 	var cssVendor = vendor ? '-' + vendor.toLowerCase() + '-' : '';
-
-	function addClass(el, classy) {
-		$(el).addClass(classy);
-	}
-
-	function removeClass(el, classy) {
-		$(el).removeClass(classy);
-	}
-
-		// Style properties
 	var transform = prefixStyle('transform');
 	var transitionDuration = prefixStyle('transitionDuration');
 
@@ -327,7 +317,6 @@ var SwipeView = (function ($) {
 			newMasterIndex = mod(newMasterIndex, len);
 
 			masterCont(moveMaster, loadingElm);
-// 			addClass(masters[moveMaster], 'swipeview-loading');
 
 			// Index to be loaded in the newly flipped page
 			masters[moveMaster].dataset.upcomingPageIndex = newMasterIndex;
@@ -346,19 +335,10 @@ var SwipeView = (function ($) {
 			if (e.target && slider) flip();
 		}
 
-		function nextIndex (n) {
-			return n === len ? 0 : n + 1;
-		}
-
-		function prevIndex (n) {
-			return n === 0 ? len - 1 : n - 1
-		}
-
 		function flip () {
 			dispatcher.fire('flip');
 
 			for (var i = 0; i < 3; i++) {
-// 				removeClass(masters[i], 'swipeview-loading');
 				masters[i].dataset.pageIndex = masters[i].dataset.upcomingPageIndex;
 			}
 		}
@@ -378,4 +358,4 @@ var SwipeView = (function ($) {
 	}
 
 	return SwipeView;
-})(Zepto);
+})();

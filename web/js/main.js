@@ -104,10 +104,9 @@ function SlideView (page) {
 
 	function initSlides () {
 		var loader = document.createElement('div');
-		loader.style.background = 'red';
 		loader.style.width = '100%';
 		loader.style.height = '100%';
-// 		loader.style.background = "black url('../img/ajax-loader.gif') no-repeat center center";
+		loader.style.background = "black url('../img/ajax-loader.gif') no-repeat center center";
 		swipeview.setLoading(loader);
 		for (var i = 0; i < 3; i++) {
 			swipeview.masters[i].appendChild(getElement(i - 1));
