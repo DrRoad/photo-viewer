@@ -64,7 +64,7 @@ var SwipeView = (function () {
 	}
 
 	// From http://fitzgeraldnick.com/weblog/26/ with slight modifications
-	function bind(thisCtx, name /*, variadic args to curry */) {
+	function bind (thisCtx, name /*, variadic args to curry */) {
 		var args = Array.prototype.slice.call(arguments, 2);
 		return function () {
 			return thisCtx[name].apply(thisCtx, args.concat(Array.prototype.slice.call(arguments)));
@@ -72,12 +72,20 @@ var SwipeView = (function () {
 	}
 
 	// Mod in javascript is messed up for negative numbers.
-	function mod(a, b) {
+	function mod (a, b) {
 		return ((a % b) + b) % b;
 	}
 
-	function clamp(n, min, max) {
+	function clamp (n, min, max) {
 		return Math.max(min, Math.min(max, n));
+	}
+
+	function isElement (o) {
+		if (typeof HTMLElement === "object") {
+			return o instanceof HTMLElement
+		} else {
+			return o && typeof o === "object" && o.nodeType === 1 && typeof o.nodeName === "string"
+		}
 	}
 
 	var dummyStyle = document.createElement('div').style;
@@ -109,6 +117,9 @@ var SwipeView = (function () {
 		var page = 0;
 		var snapThreshold = 0;
 		var inputhandler = new InputHandler(vendor);
+		var source = function () {
+			throw "SwipeView source callback not provided!";
+		};
 
 		function init () {
 			wrapper.style.overflow = 'hidden';
@@ -149,6 +160,27 @@ var SwipeView = (function () {
 			});
 		}
 
+		function getElement (i) {
+			function errorPage(customMessage) {
+				var err = document.createElement('p');
+				err.innerHTML = "There was an error creating this page! Contact the developer for more information..." + "<br><br>" + customMessage;
+return err;
+			}
+
+			var element = null;
+			try {
+				element = source(i);
+			} catch (e) {
+				return errorPage("Exception returned from source() function with input " + i + ". Message: " + e);
+			}
+
+			if (isElement(element)) {
+				return element;
+			} else {
+				return errorPage("Invalid type returned from source() function. Got type " + typeof element + " (with value " + element + "), expected string or node. Input was " + i);
+			}
+		}
+
 		var dispatcher = new Dispatcher();
 		self.on = dispatcher.on;
 		self.off = dispatcher.off;
@@ -159,18 +191,23 @@ var SwipeView = (function () {
 			snapThreshold = Math.round(pageWidth * 0.15);
 			slider.style[transitionDuration] = '0s';
 			setPos(-page * pageWidth);
+			return self;
 		}
 
 		self.setLen = function (n) {
 			len = n;
 			self.refreshSize();
+			return self;
 		}
 
 		self.page = function () {
 			return page;
 		}
 
-		self.setPage = function (p) {
+		self.setPage = function (newPage) {
+			if (typeof newPage !== 'number') {
+				throw "SlideView.setPage() requires a number! ('" + newPage + "' given)";
+			}
 			function positionMasters(a, b, c) {
 				var m = masters;
 				var sa = m[a].style;
@@ -192,7 +229,7 @@ var SwipeView = (function () {
 				m[b].dataset.upcomingPageIndex = page;
 				m[c].dataset.upcomingPageIndex = page === len - 1 ? 0 : page + 1;
 			}
-			page = clamp(p, 0, len - 1);
+			page = clamp(newPage, 0, len - 1);
 			slider.style[transitionDuration] = '0s';
 			setPos(-page * pageWidth);
 
@@ -206,20 +243,41 @@ var SwipeView = (function () {
 				positionMasters(1, 2, 0);
 			}
 
-			dispatcher.fire('flip');
-
 			for (var i = 0; i < 3; i++) {
+				var m = masters[i];
+				var d = m.dataset;
+				if (d.upcomingPageIndex == d.pageIndex) continue;
+
+				m.innerHTML = '';
+				var el = getElement(d.upcomingPageIndex);
+				m.appendChild(getElement(d.upcomingPageIndex));
+
 				masters[i].dataset.pageIndex = masters[i].dataset.upcomingPageIndex;
 			}
+
+			dispatcher.fire('flip');
+
+			return self;
 		}
 
-		var loadingElm;
-		self.setLoading = function (newLoadingElm) {
-			loadingElm = newLoadingElm;
+		self.setSource = function (newSource) {
+			if (typeof newSource !== "function") {
+				throw "SlideView.setSource expects the source to be a generator function, got '" + newSource + "'.";
+			}
+			source = newSource;
+			self.invalidate();
+			return self;
+		}
+
+		self.invalidate = function () {
+			for (var i = 0; i < 3; i++) masters[i].dataset.pageIndex = -1;
+			self.setPage(page);
+			return self;
 		}
 
 		self.destroy = function () {
 			dispatcher.fire('destroy');
+			return self;
 		}
 
 		function setPos (x) {
