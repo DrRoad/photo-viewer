@@ -114,8 +114,12 @@ function PhotoViewer (page, urls, index) {
 			var div = document.createElement('div');
 			div.style.width = '100%';
 			div.style.height = '100%';
-			// black url('../img/ajax-loader.gif') no-repeat center center
-			div.style.background = 'url("' + source(i) + '") center center no-repeat';
+			div.style.background = 'black url("../img/ajax-loader.gif") no-repeat center center';
+			var img = new Image();
+			img.src = source(i);
+			img.onload = function () {
+				div.style.backgroundImage = 'url("' + img.src + '")';
+			}
 			return div;
 		});
 	}
