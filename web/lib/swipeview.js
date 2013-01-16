@@ -1,11 +1,11 @@
 /*!
- * SlideView 1.0 - For all your slick, sliding needs. Copyright (c) 2013 Justin McGirr
+ * SlideViewer 1.0 - For all your slick, sliding needs. Copyright (c) 2013 Justin McGirr
  * http://github.com/crazy2be
  *
  * Based on code from SwipeView v1.0 ~ Copyright (c) 2012 Matteo Spinelli, http://cubiq.org
  * Released under MIT license, http://cubiq.org/license
  */
-var SlideView = (function () {
+var SlideViewer = (function () {
 	function InputHandler (vendor) {
 		var self = this;
 		var hasTouch = 'ontouchstart' in window;
@@ -13,7 +13,7 @@ var SlideView = (function () {
 		var startEvent = hasTouch ? 'touchstart' : 'mousedown';
 		var moveEvent = hasTouch ? 'touchmove' : 'mousemove';
 		var endEvent = hasTouch ? 'touchend' : 'mouseup';
-		var cancelEvent = hasTouch ? 'touchcancel' : 'mouseup';
+		var cancelEvent = hasTouch ? 'touchcancel' : 'mouseout';
 		var transitionEndEvent = (function () {
 			if ( vendor === false ) return false;
 
@@ -30,8 +30,10 @@ var SlideView = (function () {
 
 		function handleEvent (e) {
 			var t = e.type;
-			if (t == startEvent) dispatcher.fire('start', e, hasTouch ? e.touches[0] : e);
-			else if (t == moveEvent) dispatcher.fire('move', e, hasTouch ? e.touches[0] : e);
+			if (t == startEvent) {
+				if (hasTouch && e.touches.length > 1) return;
+				dispatcher.fire('start', e, hasTouch ? e.changedTouches[0] : e);
+			} else if (t == moveEvent) dispatcher.fire('move', e, hasTouch ? e.touches[0] : e);
 			else if (t == cancelEvent) dispatcher.fire('end', e, hasTouch ? e.changedTouches[0] : e);
 			else if (t == endEvent) dispatcher.fire('end', e, hasTouch ? e.changedTouches[0] : e);
 			else if (t == resizeEvent) dispatcher.fire('resize', e);
@@ -52,6 +54,7 @@ var SlideView = (function () {
 			wrapper.addEventListener(startEvent, handleEvent, false);
 			wrapper.addEventListener(moveEvent, handleEvent, false);
 			wrapper.addEventListener(endEvent, handleEvent, false);
+			wrapper.addEventListener(cancelEvent, handleEvent, false);
 			slider.addEventListener(transitionEndEvent, handleEvent, false);
 			return this;
 		}
@@ -61,17 +64,10 @@ var SlideView = (function () {
 			wrapper.removeEventListener(startEvent, handleEvent, false);
 			wrapper.removeEventListener(moveEvent, handleEvent, false);
 			wrapper.removeEventListener(endEvent, handleEvent, false);
+			wrapper.removeEventListener(cancelEvent, handleEvent, false);
 			slider.removeEventListener(transitionEndEvent, handleEvent, false);
 			return this;
 		}
-	}
-
-	// From http://fitzgeraldnick.com/weblog/26/ with slight modifications
-	function bind (thisCtx, name /*, variadic args to curry */) {
-		var args = Array.prototype.slice.call(arguments, 2);
-		return function () {
-			return thisCtx[name].apply(thisCtx, args.concat(Array.prototype.slice.call(arguments)));
-		};
 	}
 
 	// Mod in javascript is messed up for negative numbers.
@@ -109,7 +105,7 @@ var SlideView = (function () {
 	var transform = prefixStyle('transform');
 	var transitionDuration = prefixStyle('transitionDuration');
 
-	function SlideView (wrapper) {
+	function SlideViewer (wrapper) {
 		var self = this;
 		var slider;
 		var len = 0;
@@ -121,7 +117,7 @@ var SlideView = (function () {
 		var snapThreshold = 0;
 		var inputhandler = new InputHandler(vendor);
 		var source = function () {
-			throw "SlideView source callback not provided!";
+			throw "SlideViewer source callback not provided!";
 		};
 
 		function init () {
@@ -157,7 +153,7 @@ var SlideView = (function () {
 
 			inputhandler.attach(wrapper, slider);
 			inputhandler.on('start', onStart);
-			inputhandler.on('resize', bind(self, 'refreshSize'));
+			inputhandler.on('resize', self.refreshSize);
 			dispatcher.on('destroy', function () {
 				inputhandler.detach();
 			});
@@ -209,7 +205,7 @@ return err;
 
 		self.setPage = function (newPage) {
 			if (typeof newPage !== 'number') {
-				throw "SlideView.setPage() requires a number! ('" + newPage + "' given)";
+				throw "SlideViewer.setPage() requires a number! ('" + newPage + "' given)";
 			}
 			function positionMasters(a, b, c) {
 				var m = masters;
@@ -265,7 +261,7 @@ return err;
 
 		self.setSource = function (newSource) {
 			if (typeof newSource !== "function") {
-				throw "SlideView.setSource expects the source to be a generator function, got '" + newSource + "'.";
+				throw "SlideViewer.setSource expects the source to be a generator function, got '" + newSource + "'.";
 			}
 			source = newSource;
 			self.invalidate();
@@ -317,9 +313,11 @@ return err;
 					return;
 				}
 
-				// We are scrolling vertically, so skip SlideView and give the control back to the browser
+				// We are scrolling vertically, so skip SlideViewer and give the control back to the browser
 				if (absY > absX && !directionLocked) {
 					inputhandler.off('move');
+					inputhandler.off('end');
+					inputhandler.on('start', onStart);
 					return;
 				}
 				directionLocked = true;
@@ -380,5 +378,5 @@ return err;
 		return vendor + style;
 	}
 
-	return SlideView;
+	return SlideViewer;
 })();

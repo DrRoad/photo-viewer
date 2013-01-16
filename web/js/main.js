@@ -52,15 +52,15 @@ function Dispatcher () {
 	// with the foobar namespace, so that you can easily remove it later with
 	//    dispatcher.off('.foobar');
 	self.on = function (name, cb) {
-		var events = name.split(' ');
-		for (var i = 0; i < events.length; i++) {
-			var namebits = events[i].split('.');
+		var eventList = name.split(' ');
+		for (var i = 0; i < eventList.length; i++) {
+			var namebits = eventList[i].split('.');
 			var event = namebits[0];
 			var namespaces = namebits.splice(1);
 			registerEvent(event, namespaces, cb);
 		}
 
-		function registerEvent (name, namespaces, cb) {
+		function registerEvent (event, namespaces, cb) {
 			events[event] = (events[event] || []).concat({
 				callback: cb,
 				namespaces: namespaces,
@@ -82,22 +82,23 @@ function Dispatcher () {
 	//    dispatcher.off('.foo .bar');
 	//    dispatcher.off('click.foo click.bar');
 	self.off = function (name) {
-		var events = name.split(' ');
-		for (var i = 0; i < events.length; i++) {
-			var namebits = events[i].split('.');
+		var eventList = name.split(' ');
+		for (var i = 0; i < eventList.length; i++) {
+			var namebits = eventList[i].split('.');
 			var event = namebits[0];
 			var namespaces = namebits.splice(1);
 
 			if (event === '') {
+				debugger;
 				for (var ev in events) {
-					detachEvent(ev, namespaces, cb);
+					detachEvent(ev, namespaces);
 				}
 			} else {
-				detachEvent(event, namespaces, cb);
+				detachEvent(event, namespaces);
 			}
 		}
 
-		function detachEvent (name, namespaces, cb) {
+		function detachEvent (event, namespaces) {
 			for (var i = 0; i < (events[event] || []).length; i++) {
 				var ev = events[event][i];
 				if (arrEqual(intersection(ev.namespaces, namespaces), namespaces)) {
@@ -122,9 +123,11 @@ function Dispatcher () {
 }
 
 // PhotoViewer takes over the content pane of your app screen.
+// It wraps SlideViewer for the common case of simply displaying
+// a set of photos in the content of your app.
 function PhotoViewer (page, urls, index) {
 	var self = this;
-	var slideview;
+	var slideviewer;
 	var loaderImg = [
 		"data:image/gif;base64,",
 		"R0lGODlhEAAQAPIAAAAAAP///zw8PLy8vP///5ycnHx8fGxsbCH+GkNyZWF0ZWQgd2l0aCBhamF4",
@@ -140,20 +143,15 @@ function PhotoViewer (page, urls, index) {
 		"xTAUkGCbtgENBMJAEJsxgMLWzpEAACH5BAAKAAcALAAAAAAQABAAAAMyCLrc/jDKSatlQtScKdce",
 		"CAjDII7HcQ4EMTCpyrCuUBjCYRgHVtqlAiB1YhiCnlsRkAAAOwAAAAAAAAAAAA==",
 	].join('');
-	var backgroundImg = [
-		"data:image/png;base64,",
-		"iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAGklEQVQI12MUEBBggIEPHz7A2UwM",
-		"OMDglAAAN2YDEJ7jdzoAAAAASUVORK5CYII=",
-	].join('');
 
 	function attachTo (page) {
 		function appShow () {
 			page.querySelector('.app-content').appendChild(wrapper);
-			slideview.refreshSize();
+			slideviewer.refreshSize();
 		}
 
 		function appLayout () {
-			slideview.refreshSize();
+			slideviewer.refreshSize();
 		}
 
 		function appHide () {
@@ -165,12 +163,10 @@ function PhotoViewer (page, urls, index) {
 		var wrapper = document.createElement('div');
 		wrapper.style.width = '100%';
 		wrapper.style.height = '100%';
-		wrapper.style.background = 'black url(' + backgroundImg + ')';
-		wrapper.style.color = 'white';
 
-		slideview = new SlideView(wrapper);
-		slideview.on('flip', function () {
-			dispatcher.fire('flip', slideview.page());
+		slideviewer = new SlideViewer(wrapper);
+		slideviewer.on('flip', function () {
+			dispatcher.fire('flip', slideviewer.page());
 		});
 
 		page.addEventListener('appShow', appShow, false);
@@ -191,8 +187,8 @@ function PhotoViewer (page, urls, index) {
 			return newSource[i];
 		}
 
-		slideview.setLen(newSource.length);
-		slideview.setSource(function (i) {
+		slideviewer.setLen(newSource.length);
+		slideviewer.setSource(function (i) {
 			var wrap = document.createElement('div')
 			wrap.style.width = '100%';
 			wrap.style.height = '100%';
@@ -247,7 +243,7 @@ function PhotoViewer (page, urls, index) {
 
 	if (page !== undefined) attachTo(page);
 	if (urls !== undefined) setSource(urls);
-	if (index !== undefined) slideview.setPage(index);
+	if (index !== undefined) slideviewer.setPage(index);
 }
 
 (function ($, cards, App) {
@@ -286,7 +282,7 @@ function PhotoViewer (page, urls, index) {
 'http://www.techdigest.tv/three-logo-thumb.jpg',
 'http://danblackonleadership.info/wp-content/uploads/2012/12/Four-Steps-to-Develop-and-Install-Your-HOLD-PLUS-System.png',
 'http://us.123rf.com/400wm/400/400/virinka/virinka1112/virinka111200409/11659584-cartoon-number-five.jpg',
-'http://b.vimeocdn.com/ps/959/95999_300.jpg',
+'https://twimg0-a.akamaihd.net/profile_images/1839102782/High_Six_logo.jpg',
 'http://mwafrica.files.wordpress.com/2008/11/seven-logo-large1.jpg',
 'http://longlivejudyism.files.wordpress.com/2010/11/eight-ball.jpg',
 	];
