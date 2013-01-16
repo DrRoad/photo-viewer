@@ -1,10 +1,33 @@
-// Simple event dispatcher based off of jQuery. Supports
-// dispatching of arbitrary events, event namespaces, and
-// calling event handlers with arguments. Does not
-// support binding multiple events in a single call, or
+// Simple event dispatcher inspired by jQuery's .on() and .off() methods.
+// Useful to expose arbitrary events to a client of your library in a
+// simple, fast, and familiar manner. For example, if you are writing
+// yet another AJAX library, and you want clients to be able to find out
+// when the ajax call has completed, you can do something like the following:
+//
+//    function AjaxRequest (url) {
+//        var self = this;
+//        var dispatcher = new Dispatcher();
+//        self.on = dispatcher.on;
+//        self.off = dispatcher.off;
+//        self.send = function () {
+//            [...]
+//                 dispatcher.fire('load', data);
+//        }
+//    }
+//
+// And clients can just use it how they expect to:
+//
+//    var ajax = new AjaxRequest('http://www.google.com');
+//    ajax.on('load', function () {
+//        [...]
+//    }
+//    ajax.send();
+//
+// With full, complete namespace support, event removal, and everything else
+// your users expect - in under 1kb of minified JS code.
 function Dispatcher () {
 	var self = this;
-	function intersection(a, b) {
+	function intersection (a, b) {
 		var res = [];
 		for (var i = 0; i < a.length; i++) {
 			for (var j = 0; j < b.length; j++) {
@@ -17,38 +40,77 @@ function Dispatcher () {
 	}
 	// JavaScript does reference equality for arrays by default. See
 	// http://stackoverflow.com/questions/3115982/how-to-check-javascript-array-equals
-	function arrEqual(a, b) {
+	function arrEqual (a, b) {
 		return a <= b && b >= a;
 	}
 	var events = {};
 
+	// Attach a handler for the given event(s), and associate the given namespace(s)
+	// with the event for easy removal later. Works like jQuery.on(), so
+	//    dispatcher.on('click.foobar mouseup.foobar', cb);
+	// will attach cb to the click and mouseup events, and additionally associate it
+	// with the foobar namespace, so that you can easily remove it later with
+	//    dispatcher.off('.foobar');
 	self.on = function (name, cb) {
-		var namebits = name.split('.');
-		var event = namebits[0];
-		var namespaces = namebits.splice(1);
+		var events = name.split(' ');
+		for (var i = 0; i < events.length; i++) {
+			var namebits = events[i].split('.');
+			var event = namebits[0];
+			var namespaces = namebits.splice(1);
+			registerEvent(event, namespaces, cb);
+		}
 
-		events[event] = (events[event] || []).concat({
-			callback: cb,
-			namespaces: namespaces,
-		});
+		function registerEvent (name, namespaces, cb) {
+			events[event] = (events[event] || []).concat({
+				callback: cb,
+				namespaces: namespaces,
+			});
+		}
 		return self;
 	}
 
+	// Removes handlers for the given event(s) in the given namespace(s). For
+	// each event, all of the specified namespaces must exist on the handler
+	// or it is not removed (this behaviour is the same as jQuery). If you
+	// would like to remove several different namespaces, you can specify them
+	// seperately. For example both,
+	//    dispatcher.off('.foo.bar');
+	//    dispatcher.off('click.foo.bar');
+	// will remove only handlers registered with both foo and bar as namespaces.
+	// If you want to remove handlers with either namespace, you can seperate them
+	// with spaces.
+	//    dispatcher.off('.foo .bar');
+	//    dispatcher.off('click.foo click.bar');
 	self.off = function (name) {
-		var namebits = name.split('.');
-		var event = namebits[0];
-		var namespaces = namebits.splice(1);
+		var events = name.split(' ');
+		for (var i = 0; i < events.length; i++) {
+			var namebits = events[i].split('.');
+			var event = namebits[0];
+			var namespaces = namebits.splice(1);
 
-		for (var i = 0; i < (events[event] || []).length; i++) {
-			var ev = events[event][i];
-			if (arrEqual(intersection(ev.namespaces, namespaces), namespaces)) {
-				events[event].splice(i, 1);
-				i--;
+			if (event === '') {
+				for (var ev in events) {
+					detachEvent(ev, namespaces, cb);
+				}
+			} else {
+				detachEvent(event, namespaces, cb);
+			}
+		}
+
+		function detachEvent (name, namespaces, cb) {
+			for (var i = 0; i < (events[event] || []).length; i++) {
+				var ev = events[event][i];
+				if (arrEqual(intersection(ev.namespaces, namespaces), namespaces)) {
+					events[event].splice(i, 1);
+					i--;
+				}
 			}
 		}
 		return self;
 	}
 
+	// Fire an event with the given name, passing the later arguments as parameters
+	// to all registered callbacks.
 	self.fire = function (name /*, arguments */) {
 		var handlers = events[name] || [];
 		var args = Array.prototype.slice.call(arguments, 1);
@@ -63,6 +125,26 @@ function Dispatcher () {
 function PhotoViewer (page, urls, index) {
 	var self = this;
 	var slideview;
+	var loaderImg = [
+		"data:image/gif;base64,",
+		"R0lGODlhEAAQAPIAAAAAAP///zw8PLy8vP///5ycnHx8fGxsbCH+GkNyZWF0ZWQgd2l0aCBhamF4",
+		"bG9hZC5pbmZvACH5BAAKAAAAIf8LTkVUU0NBUEUyLjADAQAAACwAAAAAEAAQAAADMwi63P4wyklr",
+		"E2MIOggZnAdOmGYJRbExwroUmcG2LmDEwnHQLVsYOd2mBzkYDAdKa+dIAAAh+QQACgABACwAAAAA",
+		"EAAQAAADNAi63P5OjCEgG4QMu7DmikRxQlFUYDEZIGBMRVsaqHwctXXf7WEYB4Ag1xjihkMZsiUk",
+		"KhIAIfkEAAoAAgAsAAAAABAAEAAAAzYIujIjK8pByJDMlFYvBoVjHA70GU7xSUJhmKtwHPAKzLO9",
+		"HMaoKwJZ7Rf8AYPDDzKpZBqfvwQAIfkEAAoAAwAsAAAAABAAEAAAAzMIumIlK8oyhpHsnFZfhYum",
+		"CYUhDAQxRIdhHBGqRoKw0R8DYlJd8z0fMDgsGo/IpHI5TAAAIfkEAAoABAAsAAAAABAAEAAAAzII",
+		"unInK0rnZBTwGPNMgQwmdsNgXGJUlIWEuR5oWUIpz8pAEAMe6TwfwyYsGo/IpFKSAAAh+QQACgAF",
+		"ACwAAAAAEAAQAAADMwi6IMKQORfjdOe82p4wGccc4CEuQradylesojEMBgsUc2G7sDX3lQGBMLAJ",
+		"ibufbSlKAAAh+QQACgAGACwAAAAAEAAQAAADMgi63P7wCRHZnFVdmgHu2nFwlWCI3WGc3TSWhUFG",
+		"xTAUkGCbtgENBMJAEJsxgMLWzpEAACH5BAAKAAcALAAAAAAQABAAAAMyCLrc/jDKSatlQtScKdce",
+		"CAjDII7HcQ4EMTCpyrCuUBjCYRgHVtqlAiB1YhiCnlsRkAAAOwAAAAAAAAAAAA==",
+	].join('');
+	var backgroundImg = [
+		"data:image/png;base64,",
+		"iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAGklEQVQI12MUEBBggIEPHz7A2UwM",
+		"OMDglAAAN2YDEJ7jdzoAAAAASUVORK5CYII=",
+	].join('');
 
 	function attachTo (page) {
 		function appShow () {
@@ -83,7 +165,7 @@ function PhotoViewer (page, urls, index) {
 		var wrapper = document.createElement('div');
 		wrapper.style.width = '100%';
 		wrapper.style.height = '100%';
-		wrapper.style.background = 'black url("../img/background.png")';
+		wrapper.style.background = 'black url(' + backgroundImg + ')';
 		wrapper.style.color = 'white';
 
 		slideview = new SlideView(wrapper);
@@ -111,26 +193,57 @@ function PhotoViewer (page, urls, index) {
 
 		slideview.setLen(newSource.length);
 		slideview.setSource(function (i) {
-			var div = document.createElement('div');
-			div.style.width = '100%';
-			div.style.height = '100%';
-			div.style.background = 'url("../img/ajax-loader.gif") no-repeat center center';
-			// Hack to get rid of flickering on images. See
-			// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
-			div.style.webkitBackfaceVisibility = 'hidden';
+			var wrap = document.createElement('div')
+			wrap.style.width = '100%';
+			wrap.style.height = '100%';
+
+			var elm = loaderElm.cloneNode(true /* deep copy */);
+			wrap.appendChild(elm);
 
 			var img = new Image();
 			img.src = source(i);
+			// Hack to get rid of flickering on images. See
+			// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
+			img.style.webkitBackfaceVisibility = 'hidden';
 			img.onload = function () {
-				div.style.backgroundImage = 'url("' + img.src + '")';
+				wrap.innerHTML = '';
+				wrap.appendChild(tbl);
 			}
-			return div;
+
+			// All of this is just a gross hack to get the image centered along both the
+			// horizontal and vertical axis. *Sigh*.
+			var cell = document.createElement('td');
+			cell.style.verticalAlign = 'middle';
+			cell.style.textAlign = 'center';
+			cell.appendChild(img);
+
+			var row = document.createElement('tr');
+			row.appendChild(cell);
+
+			var tbl = document.createElement('table');
+			tbl.style.width = '100%';
+			tbl.style.height = '100%';
+			tbl.appendChild(row);
+			return wrap;
 		});
 	}
 
 	var dispatcher = new Dispatcher();
 	self.on = dispatcher.on;
 	self.off = dispatcher.off;
+
+	var loaderElm = document.createElement('div');
+	loaderElm.style.width = '100%';
+	loaderElm.style.height = '100%';
+	loaderElm.style.background = 'url(' + loaderImg + ') no-repeat center center';
+
+	// If you want the loader element to be custom skinned for your application,
+	// you can pass in an element here to be used for a placeholder while your
+	// images are loading.
+	self.setLoader = function (newLoaderElm) {
+		loaderElm = newLoaderElm;
+		return self;
+	}
 
 	if (page !== undefined) attachTo(page);
 	if (urls !== undefined) setSource(urls);
@@ -177,13 +290,13 @@ function PhotoViewer (page, urls, index) {
 'http://mwafrica.files.wordpress.com/2008/11/seven-logo-large1.jpg',
 'http://longlivejudyism.files.wordpress.com/2010/11/eight-ball.jpg',
 	];
-// 	App.load('viewer', {images: images, index: 0});
+	App.load('viewer', {images: images, index: 0});
 
-	try {
-		App.restore();
-	}
-	catch (err) {
-		App.load('gallery', {images: images});
-	}
+// 	try {
+// 		App.restore();
+// 	}
+// 	catch (err) {
+// 		App.load('gallery', {images: images});
+// 	}
 
 })(Zepto, cards, App);

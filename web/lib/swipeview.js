@@ -294,7 +294,6 @@ return err;
 
 		function onStart (e, point) {
 			inputhandler.off('start');
-			inputhandler.on('move', onMove);
 
 			var startX = point.pageX;
 			var startY = point.pageY;
@@ -303,6 +302,7 @@ return err;
 			var directionLocked = false;
 
 			slider.style[transitionDuration] = '0s';
+			inputhandler.on('move', onMove);
 
 			function onMove (e, point) {
 				var dx = point.pageX - prevX;
