@@ -114,7 +114,11 @@ function PhotoViewer (page, urls, index) {
 			var div = document.createElement('div');
 			div.style.width = '100%';
 			div.style.height = '100%';
-			div.style.background = 'black url("../img/ajax-loader.gif") no-repeat center center';
+			div.style.background = 'url("../img/ajax-loader.gif") no-repeat center center';
+			// Hack to get rid of flickering on images. See
+			// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
+			div.style.webkitBackfaceVisibility = 'hidden';
+
 			var img = new Image();
 			img.src = source(i);
 			img.onload = function () {
@@ -164,12 +168,16 @@ function PhotoViewer (page, urls, index) {
 
 	var images = [
 'http://theosophical.files.wordpress.com/2011/06/zero2.jpg',
- 'http://2.bp.blogspot.com/-pi1jelOHWAA/UJ0rN3F0M-I/AAAAAAAAANE/nqbgpZjIbFk/s1600/edit(27117).png',
+'http://2.bp.blogspot.com/-pi1jelOHWAA/UJ0rN3F0M-I/AAAAAAAAANE/nqbgpZjIbFk/s1600/edit(27117).png',
 'http://www.underdogmillionaire.com/blog/wp-content/uploads/2011/04/2-steps-to-get-rich.png',
- 'http://www.techdigest.tv/three-logo-thumb.jpg',
-'http://danblackonleadership.info/wp-content/uploads/2012/12/Four-Steps-to-Develop-and-Install-Your-HOLD-PLUS-System.png'
+'http://www.techdigest.tv/three-logo-thumb.jpg',
+'http://danblackonleadership.info/wp-content/uploads/2012/12/Four-Steps-to-Develop-and-Install-Your-HOLD-PLUS-System.png',
+'http://us.123rf.com/400wm/400/400/virinka/virinka1112/virinka111200409/11659584-cartoon-number-five.jpg',
+'http://b.vimeocdn.com/ps/959/95999_300.jpg',
+'http://mwafrica.files.wordpress.com/2008/11/seven-logo-large1.jpg',
+'http://longlivejudyism.files.wordpress.com/2010/11/eight-ball.jpg',
 	];
-// 	App.load('gallery', {images: images});
+// 	App.load('viewer', {images: images, index: 0});
 
 	try {
 		App.restore();

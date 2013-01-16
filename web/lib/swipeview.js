@@ -293,6 +293,9 @@ return err;
 		}
 
 		function onStart (e, point) {
+			inputhandler.off('start');
+			inputhandler.on('move', onMove);
+
 			var startX = point.pageX;
 			var startY = point.pageY;
 			var prevX = startX;
@@ -300,8 +303,6 @@ return err;
 			var directionLocked = false;
 
 			slider.style[transitionDuration] = '0s';
-
-			inputhandler.on('move', onMove);
 
 			function onMove (e, point) {
 				var dx = point.pageX - prevX;
@@ -329,7 +330,6 @@ return err;
 				}
 
 				e.preventDefault();
-				inputhandler.off('start');
 				inputhandler.off('end').on('end', onEnd);
 				inputhandler.off('transitionEnd').on('transitionEnd', onTransitionEnd);
 				setPos(newX);
@@ -338,7 +338,6 @@ return err;
 			function onEnd (e, point) {
 				inputhandler.off('move');
 				inputhandler.off('end');
-				inputhandler.on('start', onStart);
 
 				prevX = point.pageX;
 				var deltaX = prevX - startX;
@@ -368,6 +367,7 @@ return err;
 
 			function onTransitionEnd (e) {
 				self.setPage(page);
+				inputhandler.on('start', onStart);
 			}
 		}
 		init();
