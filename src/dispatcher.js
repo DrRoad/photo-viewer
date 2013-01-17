@@ -89,7 +89,6 @@ function Dispatcher () {
 			var namespaces = namebits.splice(1);
 
 			if (event === '') {
-				debugger;
 				for (var ev in events) {
 					detachEvent(ev, namespaces);
 				}
