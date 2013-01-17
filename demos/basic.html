@@ -1,41 +1,93 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Photo Viewer Demo - Basic</title>
+		<title>Photo Viewer Demo With App.js</title>
 
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<link rel="stylesheet" href="http://cdn.kik.com/app/1/default.css">
 
 		<style>
-			html, body, div {
-				margin: 0;
-				padding: 0;
-			}
-			html, body {
-				font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-				-webkit-tap-highlight-color: rgba(0,0,0,0);
-				-webkit-user-select: none;
-				user-select: none;
-			}
-			.clear {
-				clear: both;
-			}
-
-			/* TODO */
+		/* For easy use on desktop */
+		body img {
+			-webkit-user-select: none;
+			-webkit-user-drag: none;
+			max-width: 100%;
+			max-height: 100%;
+		}
 		</style>
 	</head>
 
 	<body>
-		<!-- TODO -->
+		<!-- Gallery -->
+		<div class="app-page" data-page="gallery">
+			<div class="app-topbar">
+				<div class="app-title">Gallery</div>
+			</div>
+			<div class="app-content"></div>
+		</div>
 
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+		<!-- Viewer -->
+		<div class="app-page app-viewer" data-page="viewer">
+			<div class="app-topbar">
+				<div class="left app-button" data-back="true">Back</div>
+				<div class="app-title">Photo Viewer Example</div>
+			</div>
+			<div class="app-content" data-no-scroll="true"></div>
+		</div>
 
+		<script src="http://cdn.kik.com/app/1/app.js"></script>
+		<script src="../src/dispatcher.js"></script>
 		<script src="../src/slide-viewer.js"></script>
 		<script src="../src/photo-viewer.js"></script>
 
 		<script>
-			(function (window, document, $, SlideViewer, PhotoViewer) {
-				//TODO
-			})(window, document, jQuery, SlideViewer, PhotoViewer);
+		(function (App, PhotoViewer) {
+			App.populator('viewer', function (page, data) {
+				var urls  = data.images;
+				var p = new PhotoViewer(page, urls, parseInt(data.index, 10))
+				p.on('flip', function (i) {
+					data.index = i;
+					App.saveStack();
+				});
+			});
+			App.populator('gallery', function (page, data) {
+				var urls = data.images;
+
+				function addImage (page, urls, index) {
+					var url = urls[index];
+					var img = document.createElement('img');
+					img.src = url;
+					img.style.width = '50%';
+					page.appendChild(img);
+					img.onclick = function () {
+						App.load('viewer', {images: urls, index: index});
+					}
+				}
+
+				var el = page.querySelector('.app-content');
+				for (var i = 0; i < urls.length; i++) {
+					addImage(el, urls, i);
+				}
+			})
+
+			var images = [
+				'http://theosophical.files.wordpress.com/2011/06/zero2.jpg',
+				'http://2.bp.blogspot.com/-pi1jelOHWAA/UJ0rN3F0M-I/AAAAAAAAANE/nqbgpZjIbFk/s1600/edit(27117).png',
+				'http://www.underdogmillionaire.com/blog/wp-content/uploads/2011/04/2-steps-to-get-rich.png',
+				'http://www.techdigest.tv/three-logo-thumb.jpg',
+				'http://danblackonleadership.info/wp-content/uploads/2012/12/Four-Steps-to-Develop-and-Install-Your-HOLD-PLUS-System.png',
+				'http://us.123rf.com/400wm/400/400/virinka/virinka1112/virinka111200409/11659584-cartoon-number-five.jpg',
+				'https://twimg0-a.akamaihd.net/profile_images/1839102782/High_Six_logo.jpg',
+				'http://mwafrica.files.wordpress.com/2008/11/seven-logo-large1.jpg',
+				'http://longlivejudyism.files.wordpress.com/2010/11/eight-ball.jpg',
+			];
+
+			try {
+				App.restore();
+			} catch (err) {
+				App.load('gallery', {images: images});
+			}
+		})(App, PhotoViewer);
 		</script>
 	</body>
 </html>

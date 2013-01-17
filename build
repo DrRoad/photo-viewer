@@ -9,8 +9,8 @@ AWS_BUCKET="cdn.kik.com"
 AWS_CFG="${HOME}/.s3cfg-kik"
 
 buildProject () {
-	buildJS "slide-viewer.js" "src/slide-viewer.js"
-	buildJS "photo-viewer.js" "src/slide-viewer.js src/photo-viewer.js"
+	buildJS "slide-viewer.js" "src/dispatcher.js src/slide-viewer.js"
+	buildJS "photo-viewer.js" "src/dispatcher.js src/slide-viewer.js src/photo-viewer.js"
 }
 
 
