@@ -120,6 +120,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		// images are loading.
 		self.setLoader = function (newLoaderElm) {
 			loaderElm = newLoaderElm;
+			slideviewer.invalidate();
 			return self;
 		}
 
