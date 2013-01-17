@@ -1,4 +1,4 @@
-var SlideViewer = function (Zepto, jQuery, App) {
+var SlideViewer = function (Zepto, jQuery) {
 	//TODO: init
 
 	return SlideViewer;
@@ -10,4 +10,4 @@ var SlideViewer = function (Zepto, jQuery, App) {
 
 
 	//TODO: helpers
-}(window.Zepto, window.jQuery, App);
+}(window.Zepto, window.jQuery);
