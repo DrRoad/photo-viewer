@@ -31,6 +31,13 @@ And skin the loading screen:
 	photoViewer.setLoader(myLoadingElement);
 
 
+Notes
+-----
+
+Your content needs to be non-scrollable for this to work. Scrollable's hacks interfere with our positioning.
+
+	<div class="app-content" data-no-scroll="true"></div>
+
 
 slide-viewer.js - An Essential Part of a Slick, Smooth, and Slidy Mobile UI
 ===========================================================================

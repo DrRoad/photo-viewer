@@ -80,6 +80,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			// Hack to get rid of flickering on images. See
 			// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
 			img.style.webkitBackfaceVisibility = 'hidden';
+
+			img.style.webkitUserSelect = 'none';
+			img.style.webkitUserDrag = 'none';
+			img.style.maxHeight = '100%';
+			img.style.maxWidth = '100%';
 			img.onload = function () {
 				wrap.innerHTML = '';
 				wrap.appendChild(tbl);
