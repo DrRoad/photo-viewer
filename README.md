@@ -1,22 +1,41 @@
-photo-viewer.js - Embeddable photo viewer
-==================================================
+photo-viewer.js - Look Ma! I built you a photo gallery!
+=======================================================
 
-//TODO
+Simply the fastest, smoothest, easiest photo viewer library. Designed to work with [App.js](http://code.kik.com/photo-viewer/demos/basic.html). Take a look at the [Demo](http://code.kik.com/photo-viewer/demos/basic.html)!
+
+*Download*: [photo-viewer.js v1](http://cdn.kik.com/photo-viewer/1/photo-viewer.js)
 
 
-
-
-Links
+Usage
 -----
 
-[Demo](http://code.kik.com/photo-viewer/demos/basic.html)
+For basic usage, just add the PhotoViewer to your page:
 
+	App.populator('viewer', function (page, data) {
+		var photoViewer = new PhotoViewer(page, data.urls, parseInt(data.index, 10));
+	}
+
+You can listen to events:
+
+	photoViewer.on('flip', function (page) {
+		data.index = page;
+		App.saveStack();
+	}
+
+And skin the loading screen:
+
+	var myLoadingElement = document.createElement('div');
+
+	[... style your element ...]
+
+	photoViewer.setLoader(myLoadingElement);
+
+
+
+slide-viewer.js - An Essential Part of a Slick, Smooth, and Slidy Mobile UI
+===========================================================================
+// TODO
 [slide-viewer.js v1](http://cdn.kik.com/photo-viewer/1/slide-viewer.js)
-
-[photo-viewer.js v1](http://cdn.kik.com/photo-viewer/1/photo-viewer.js)
-
-
-
 
 Usage with ZeptoJS or jQuery
 ----------------------------
