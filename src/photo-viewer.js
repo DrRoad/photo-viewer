@@ -22,15 +22,18 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 	function PhotoViewer (page, urls, index) {
 		var self = this;
 		var slideviewer;
+		var unbindTableLayout;
+		var content = page.querySelector('.app-content');
 
 		function attachTo (page) {
 			function appShow () {
-				page.querySelector('.app-content').appendChild(wrapper);
+				content.appendChild(wrapper);
 				slideviewer.refreshSize();
 			}
 
 			function appLayout () {
 				slideviewer.refreshSize();
+				dispatcher.fire('layout');
 			}
 
 			function appHide () {
@@ -53,6 +56,10 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			page.addEventListener('appHide', appHide, false);
 		}
 
+		function centerImage (img) {
+			img.style.marginTop = Math.max((content.offsetHeight - img.naturalHeight) / 2, 0) + 'px';
+		}
+
 		function setSource (newSource) {
 			var len;
 			if (!Array.isArray(newSource)) {
@@ -69,42 +76,33 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			slideviewer.setLen(newSource.length);
 			slideviewer.setSource(function (i) {
 				var wrap = document.createElement('div')
-			wrap.style.width = '100%';
-			wrap.style.height = '100%';
+				wrap.style.width = '100%';
+				wrap.style.height = '100%';
 
-			var elm = loaderElm.cloneNode(true /* deep copy */);
-			wrap.appendChild(elm);
+				var elm = loaderElm.cloneNode(true /* deep copy */);
+				wrap.appendChild(elm);
 
-			var img = new Image();
-			img.src = source(i);
-			// Hack to get rid of flickering on images. See
-			// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
-			img.style.webkitBackfaceVisibility = 'hidden';
+				var img = new Image();
+				img.src = source(i);
+				// Hack to get rid of flickering on images. See
+				// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
+				img.style.webkitBackfaceVisibility = 'hidden';
 
-			img.style.webkitUserSelect = 'none';
-			img.style.webkitUserDrag = 'none';
-			img.style.maxHeight = '100%';
-			img.style.maxWidth = '100%';
-			img.onload = function () {
-				wrap.innerHTML = '';
-				wrap.appendChild(tbl);
-			}
-
-			// All of this is just a gross hack to get the image centered along both the
-			// horizontal and vertical axis. *Sigh*.
-			var cell = document.createElement('td');
-			cell.style.verticalAlign = 'middle';
-			cell.style.textAlign = 'center';
-			cell.appendChild(img);
-
-			var row = document.createElement('tr');
-			row.appendChild(cell);
-
-			var tbl = document.createElement('table');
-			tbl.style.width = '100%';
-			tbl.style.height = '100%';
-			tbl.appendChild(row);
-			return wrap;
+				img.style.webkitUserSelect = 'none';
+				img.style.webkitUserDrag = 'none';
+				img.style.maxHeight = '100%';
+				img.style.maxWidth = '100%';
+				img.style.margin = '0 auto';
+				img.style.display = 'block';
+				img.onload = function () {
+					wrap.innerHTML = '';
+					wrap.appendChild(img);
+					centerImage(img);
+					dispatcher.on('layout', function () {
+						centerImage(img);
+					});
+				}
+				return wrap;
 			});
 		}
 
