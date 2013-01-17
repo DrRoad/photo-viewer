@@ -1,10 +1,3 @@
-/*!
- * SlideViewer 1.0 - For all your slick, sliding needs. Copyright (c) 2013 Justin McGirr
- * http://github.com/crazy2be
- *
- * Based on code from SwipeView v1.0 ~ Copyright (c) 2012 Matteo Spinelli, http://cubiq.org
- * Released under MIT license, http://cubiq.org/license
- */
 var SlideViewer = (function (Zepto, jQuery) {
 	var dummyStyle = document.createElement('div').style;
 	var vendor = (function () {
