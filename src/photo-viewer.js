@@ -24,6 +24,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var slideviewer;
 		var unbindTableLayout;
 		var content = page.querySelector('.app-content');
+		var topbar = page.querySelector('.app-topbar');
+
+		function toggleTitleBar () {
+			var s = topbar.style;
+			s.visibility = s.visibility == "" ? "hidden" : "";
+		}
 
 		function attachTo (page) {
 			function appShow () {
@@ -54,10 +60,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			page.addEventListener('appShow', appShow, false);
 			page.addEventListener('appLayout', appLayout, false);
 			page.addEventListener('appHide', appHide, false);
+			Clickable(wrapper);
+			wrapper.addEventListener('click', toggleTitleBar, false);
 		}
 
 		function centerImage (img) {
-			img.style.marginTop = Math.max((content.offsetHeight - img.naturalHeight) / 2, 0) + 'px';
+			img.style.marginTop = Math.max((window.innerHeight - img.naturalHeight) / 2, 0) -topbar.offsetHeight + 'px';
 		}
 
 		function setSource (newSource) {
