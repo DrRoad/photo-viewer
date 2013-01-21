@@ -20,6 +20,13 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 	};
 	return PhotoViewer;
 
+	function round(num, places) {
+		if (places === undefined) places = 0;
+
+		var factor = Math.pow(10, places);
+		return Math.round(num * factor) / factor;
+	}
+
 	// PhotoViewer takes over the content pane of your app screen.
 	// It wraps SlideViewer for the common case of simply displaying
 	// a set of photos in the content of your app.
@@ -45,6 +52,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			function appShow () {
 				content.appendChild(wrapper);
 				slideviewer.refreshSize();
+				dispatcher.fire('layout');
 			}
 
 			function appLayout () {
@@ -70,6 +78,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				}
 				dispatcher.fire('flip', page);
 			});
+			if (App.platform === 'ios') {
+				slideviewer.on('move', function () {
+					topbar.style.visibility = "hidden";
+				});
+			}
 
 			page.addEventListener('appShow', appShow, false);
 			page.addEventListener('appLayout', appLayout, false);
@@ -81,11 +94,26 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		}
 
 		function centerImage (img) {
-			if (opts.autoHideTitle) {
-				img.style.marginTop = Math.max((window.innerHeight - img.naturalHeight) / 2, 0) -topbar.offsetHeight + 'px';
-			} else {
-				img.style.marginTop = Math.max((content.offsetHeight - img.naturalHeight) / 2, 0) + 'px';
+			// I shouldn't really have to do this, but offsetHeight and friends
+			// seem to be failing sparadically. Oh well, we can do this manually!
+			var h = img.naturalHeight;
+			var w = img.naturalWidth;
+			var r = h / w;
+			var ch = opts.autoHideTitle ? window.innerHeight : content.offsetHeight;
+			var cw = content.offsetWidth;
+
+			if (h > ch) {
+				h = ch;
+				w = h / r;
 			}
+
+			if (w > cw) {
+				w = cw;
+				h = w * r;
+			}
+
+			var oh = opts.autoHideTitle ? topbar.offsetHeight : 0;
+			img.style.marginTop = round(Math.max((ch - h) / 2, 0) - oh) + 'px';
 		}
 
 		function setSource (newSource) {
@@ -110,7 +138,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				var elm = loaderElm.cloneNode(true /* deep copy */);
 				wrap.appendChild(elm);
 
-				var img = new Image();
+				var img = document.createElement('img');
 				img.src = source(i);
 				// Hack to get rid of flickering on images. See
 				// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform

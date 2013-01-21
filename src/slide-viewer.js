@@ -332,6 +332,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 				inputhandler.off('end').on('end', onEnd);
 				inputhandler.off('transitionEnd').on('transitionEnd', onTransitionEnd);
 				setPos(newX);
+				dispatcher.fire('move', newX);
 			}
 
 			function onEnd (e, point) {
