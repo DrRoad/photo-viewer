@@ -3,7 +3,7 @@ photo-viewer.js - Look Ma! I built you a photo gallery!
 
 Simply the fastest, smoothest, easiest photo viewer library. Designed to work with [App.js](http://code.kik.com/photo-viewer/demos/basic.html). Take a look at the [Demo](http://code.kik.com/photo-viewer/demos/basic.html)!
 
-*Download*: [photo-viewer.js v1](http://cdn.kik.com/photo-viewer/1/photo-viewer.js)
+__Download__ (minified): [photo-viewer.js v1](http://cdn.kik.com/photo-viewer/1/photo-viewer.js)
 
 
 Usage
