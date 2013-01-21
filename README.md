@@ -38,6 +38,20 @@ Your content needs to be non-scrollable for this to work. Scrollable's hacks int
 
 	<div class="app-content" data-no-scroll="true"></div>
 
+By default, the PhotoViewer assumes that it has complete control over the page, and does a few nice things automatically, like allowing dismissal of the title bar with a tap, and changing the title to reflect the user's postion in the image list. If you want to do something different, you can disable either of these features with the last arugment to PhotoViewer's constructor:
+
+	var photoViewer = new PhotoViewer(page, data.urls, parseInt(data.index, 10), {
+		// Setting this to false (true is the default) tells PhotoViewer not to mess with your
+		// page's title. By default, PhotoViewer will automatically change the title as the
+		// user swipes through the list, in order to reflect their position in the queue.
+		automaticTitles: true,
+
+		// Setting this to false (true is the default) tells PhotoViewer not to hide the title
+		// bar when the user taps or swipes (depending on platform). It also makes images
+		// vertically centered relative to only the app content, rather than the whole page.
+		autoHideTitle: true,
+	});
+
 
 slide-viewer.js - An Essential Part of a Slick, Smooth, and Slidy Mobile UI
 ===========================================================================

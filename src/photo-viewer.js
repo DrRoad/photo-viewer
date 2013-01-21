@@ -66,7 +66,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			slideviewer.on('flip', function () {
 				var page = slideviewer.page();
 				if (opts.automaticTitles) {
-					title.innerText = "Photo " + page + " of " + urls.length;
+					title.innerText = "Photo " + (page + 1) + " of " + urls.length;
 				}
 				dispatcher.fire('flip', page);
 			});
