@@ -34,7 +34,9 @@
 		(function (App, PhotoViewer) {
 			App.populator('viewer', function (page, data) {
 				var urls  = data.images;
-				var p = new PhotoViewer(page, urls, parseInt(data.index, 10));
+				var p = new PhotoViewer(page, urls, parseInt(data.index, 10), {
+					autoHideTitle: false,
+				});
 				p.on('flip', function (i) {
 					data.index = i;
 					App.saveStack();

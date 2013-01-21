@@ -14,17 +14,25 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		"xTAUkGCbtgENBMJAEJsxgMLWzpEAACH5BAAKAAcALAAAAAAQABAAAAMyCLrc/jDKSatlQtScKdce",
 		"CAjDII7HcQ4EMTCpyrCuUBjCYRgHVtqlAiB1YhiCnlsRkAAAOwAAAAAAAAAAAA==",
 	].join('');
+	var defaultOpts = {
+		automaticTitles: true,
+		autoHideTitle: true,
+	};
 	return PhotoViewer;
 
 	// PhotoViewer takes over the content pane of your app screen.
 	// It wraps SlideViewer for the common case of simply displaying
 	// a set of photos in the content of your app.
-	function PhotoViewer (page, urls, index) {
+	function PhotoViewer (page, urls, index, opts) {
 		var self = this;
 		var slideviewer;
 		var unbindTableLayout;
 		var content = page.querySelector('.app-content');
 		var topbar = page.querySelector('.app-topbar');
+		opts = opts || {};
+		for (var o in defaultOpts) {
+			opts[o] = opts[o] === undefined ? defaultOpts[o] : opts[o];
+		}
 
 		function toggleTitleBar () {
 			var s = topbar.style;
@@ -60,12 +68,18 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			page.addEventListener('appShow', appShow, false);
 			page.addEventListener('appLayout', appLayout, false);
 			page.addEventListener('appHide', appHide, false);
-			Clickable(wrapper);
-			wrapper.addEventListener('click', toggleTitleBar, false);
+			if (opts.autoHideTitle) {
+				Clickable(wrapper);
+				wrapper.addEventListener('click', toggleTitleBar, false);
+			}
 		}
 
 		function centerImage (img) {
-			img.style.marginTop = Math.max((window.innerHeight - img.naturalHeight) / 2, 0) -topbar.offsetHeight + 'px';
+			if (opts.autoHideTitle) {
+				img.style.marginTop = Math.max((window.innerHeight - img.naturalHeight) / 2, 0) -topbar.offsetHeight + 'px';
+			} else {
+				img.style.marginTop = Math.max((content.offsetHeight - img.naturalHeight) / 2, 0) + 'px';
+			}
 		}
 
 		function setSource (newSource) {
@@ -106,7 +120,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					wrap.innerHTML = '';
 					wrap.appendChild(img);
 					centerImage(img);
-					dispatcher.on('layout', function () {
+					var name = 'layout.elm' + i;
+					dispatcher.off(name).on(name, function () {
 						centerImage(img);
 					});
 				}
