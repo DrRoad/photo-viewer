@@ -29,6 +29,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var unbindTableLayout;
 		var content = page.querySelector('.app-content');
 		var topbar = page.querySelector('.app-topbar');
+		var title = page.querySelector('.app-title');
+
 		opts = opts || {};
 		for (var o in defaultOpts) {
 			opts[o] = opts[o] === undefined ? defaultOpts[o] : opts[o];
@@ -62,7 +64,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 			slideviewer = new SlideViewer(wrapper);
 			slideviewer.on('flip', function () {
-				dispatcher.fire('flip', slideviewer.page());
+				var page = slideviewer.page();
+				if (opts.automaticTitles) {
+					title.innerText = "Photo " + page + " of " + urls.length;
+				}
+				dispatcher.fire('flip', page);
 			});
 
 			page.addEventListener('appShow', appShow, false);
@@ -83,19 +89,19 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		}
 
 		function setSource (newSource) {
-			var len;
 			if (!Array.isArray(newSource)) {
 				throw "PhotoViewer setSource expects an array of photo URLs for a source, '" + newSource + "' given.";
 			}
+			urls = newSource;
 
-			source = function (i) {
-				if (i < 0 || i >= newSource.length) {
-					throw "Out of bounds! Trying to get element at index '" + i + "', but length is only '" + newSource.length + "'";
+			function source (i) {
+				if (i < 0 || i >= urls.length) {
+					throw "Out of bounds! Trying to get element at index '" + i + "', but length is only '" + urls.length + "'";
 				}
-				return newSource[i];
+				return urls[i];
 			}
 
-			slideviewer.setLen(newSource.length);
+			slideviewer.setLen(urls.length);
 			slideviewer.setSource(function (i) {
 				var wrap = document.createElement('div')
 				wrap.style.width = '100%';
