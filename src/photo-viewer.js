@@ -50,6 +50,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 		function attachTo (page) {
 			function appShow () {
+				content.innerHTML = '';
 				content.appendChild(wrapper);
 				slideviewer.refreshSize();
 				dispatcher.fire('layout');
@@ -69,6 +70,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			var wrapper = document.createElement('div');
 			wrapper.style.width = '100%';
 			wrapper.style.height = '100%';
+
+			content.appendChild(loaderElm);
 
 			slideviewer = new SlideViewer(wrapper);
 			slideviewer.on('flip', function () {
@@ -178,6 +181,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		self.setLoader = function (newLoaderElm) {
 			loaderElm = newLoaderElm;
 			slideviewer.invalidate();
+			content.innerHTML = '';
+			content.appendChild(loaderElm);
 			return self;
 		}
 
