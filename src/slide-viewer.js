@@ -122,7 +122,6 @@ var SlideViewer = (function (Zepto, jQuery) {
 		};
 
 		function init () {
-			wrapper.style.overflow = 'hidden';
 			wrapper.style.postition = 'relative';
 
 			slider = document.createElement('div');
@@ -145,7 +144,6 @@ var SlideViewer = (function (Zepto, jQuery) {
 				s.height = '100%';
 				s.width = '100%';
 				s.left = i * 100 + '%';
-				s.overflow = 'hidden';
 
 				page.dataset = {};
 

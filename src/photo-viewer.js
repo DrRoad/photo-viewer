@@ -45,11 +45,17 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 		function toggleTitleBar () {
 			var s = topbar.style;
-			s.visibility = s.visibility == "" ? "hidden" : "";
+			if (App.platform == 'ios') {
+				s.opacity = s.opacity != "0" ? "0" : "1";
+			} else {
+				s.marginTop = s.marginTop == "" ? "-48px" : "";
+				s.marginBottom = s.marginBottom == "" ? "48px" : "";
+			}
 		}
 
 		function attachTo (page) {
 			function appShow () {
+				topbar.style.webkitTransitionDuration = "1s";
 				content.innerHTML = '';
 				content.appendChild(wrapper);
 				slideviewer.refreshSize();
@@ -98,7 +104,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			});
 			if (App.platform === 'ios') {
 				slideviewer.on('move', function () {
-					topbar.style.visibility = "hidden";
+					topbar.style.opacity = "0";
 				});
 			}
 
@@ -132,7 +138,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 			var oh = opts.autoHideTitle ? topbar.offsetHeight : 0;
 			var marginTop = round(Math.max((ch - h) / 2, 0) - oh);
-			img.style.marginTop = marginTop + 'px';
+
+			var s = img.style;
+			s.marginTop = marginTop + 'px';
+			s.width = w + 'px';
+			s.height = h + 'px';
 		}
 
 		function setSource (newSource) {
@@ -165,8 +175,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 				img.style.webkitUserSelect = 'none';
 				img.style.webkitUserDrag = 'none';
-				img.style.maxHeight = '100%';
-				img.style.maxWidth = '100%';
 				img.style.margin = '0 auto';
 				img.style.display = 'block';
 				img.onload = function () {
