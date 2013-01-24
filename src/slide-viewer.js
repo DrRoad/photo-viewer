@@ -290,6 +290,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 		function onStart (e, point) {
 			inputhandler.off('start');
+			inputhandler.on('end', onEndNoMove);
 
 			var startX = point.pageX;
 			var startY = point.pageY;
@@ -362,6 +363,12 @@ var SlideViewer = (function (Zepto, jQuery) {
 				slider.style[transitionDuration] = Math.floor(500 * Math.abs(xPos - newX) / pageWidth) + 'ms';
 
 				setPos(newX);
+			}
+
+			function onEndNoMove () {
+				inputhandler.off('move');
+				inputhandler.off('end');
+				inputhandler.on('start', onStart);
 			}
 
 			function onTransitionEnd (e) {
