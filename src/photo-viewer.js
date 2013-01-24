@@ -46,16 +46,22 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		function toggleTitleBar () {
 			var s = topbar.style;
 			if (App.platform == 'ios') {
-				s.opacity = s.opacity != "0" ? "0" : "1";
+				s.opacity = s.opacity != '0' ? '0' : '1';
 			} else {
-				s.marginTop = s.marginTop == "" ? "-48px" : "";
-				s.marginBottom = s.marginBottom == "" ? "48px" : "";
+				s.transform = s.transform == '' ? 'translate3d(0, -100%, 0)' : '';
+				s.webkitTransform = s.webkitTransform == '' ? 'translate3d(0, -100%, 0)' : '';
 			}
 		}
 
 		function attachTo (page) {
 			function appShow () {
-				topbar.style.webkitTransitionDuration = "1s";
+				if (App.platform == 'ios') {
+					topbar.style.transition = 'opacity 0.5s ease-in-out';
+					topbar.style.webkitTransition = 'opacity 0.5s ease-in-out';
+				} else {
+					topbar.style.transition = 'transform 0.5s ease-in-out';
+					topbar.style.webkitTransition = '-webkit-transform 0.5s ease-in-out';
+				}
 				content.innerHTML = '';
 				content.appendChild(wrapper);
 				slideviewer.refreshSize();
@@ -94,15 +100,14 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			wrapper.style.width = '100%';
 			wrapper.style.height = '100%';
 
-			content.appendChild(loaderElm);
-
 			slideviewer = new SlideViewer(wrapper);
 			slideviewer.on('flip', function () {
 				var i = slideviewer.page();
 				flip(i);
 				dispatcher.fire('flip', i);
 			});
-			if (App.platform === 'ios') {
+
+			if (App.platform == 'ios') {
 				slideviewer.on('move', function () {
 					topbar.style.opacity = "0";
 				});
@@ -114,6 +119,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			if (opts.autoHideTitle) {
 				Clickable(wrapper);
 				wrapper.addEventListener('click', toggleTitleBar, false);
+				document.body.addEventListener('touchstart', function (e) {
+					if (topbar.style.opacity == '0') {
+						topbar.style.opacity = '1';
+					}
+				}, false);
 			}
 		}
 
@@ -209,5 +219,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		if (page !== undefined) attachTo(page);
 		if (urls !== undefined) setSource(urls);
 		if (index !== undefined) slideviewer.setPage(index);
+
+		content.appendChild(loaderElm);
 	}
 }(window.Zepto, window.jQuery, App));
