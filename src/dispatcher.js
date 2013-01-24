@@ -41,7 +41,7 @@ function Dispatcher () {
 	// JavaScript does reference equality for arrays by default. See
 	// http://stackoverflow.com/questions/3115982/how-to-check-javascript-array-equals
 	function arrEqual (a, b) {
-		return a <= b && b >= a;
+		return a.toString() == b.toString();
 	}
 	var events = {};
 

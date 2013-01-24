@@ -67,6 +67,23 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				page.removeEventListener('appHide', appHide, false);
 			}
 
+			function flip (i) {
+				if (opts.automaticTitles) {
+					title.innerText = (i + 1) + " of " + urls.length;
+				}
+				var wrappers = wrapper.querySelectorAll('.slideviewer-slide');
+
+				dispatcher.off('layout.imgs');
+				for (var i = 0; i < wrappers.length; i++) {
+					(function (wrapper) {
+						dispatcher.on('layout.imgs', function () {
+							var img = wrapper.querySelector('img');
+							if (img) centerImage(img);
+						});
+					}(wrappers[i]));
+				}
+			}
+
 			var wrapper = document.createElement('div');
 			wrapper.style.width = '100%';
 			wrapper.style.height = '100%';
@@ -75,11 +92,9 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 			slideviewer = new SlideViewer(wrapper);
 			slideviewer.on('flip', function () {
-				var page = slideviewer.page();
-				if (opts.automaticTitles) {
-					title.innerText = (page + 1) + " of " + urls.length;
-				}
-				dispatcher.fire('flip', page);
+				var i = slideviewer.page();
+				flip(i);
+				dispatcher.fire('flip', i);
 			});
 			if (App.platform === 'ios') {
 				slideviewer.on('move', function () {
@@ -116,7 +131,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			}
 
 			var oh = opts.autoHideTitle ? topbar.offsetHeight : 0;
-			img.style.marginTop = round(Math.max((ch - h) / 2, 0) - oh) + 'px';
+			var marginTop = round(Math.max((ch - h) / 2, 0) - oh);
+			img.style.marginTop = marginTop + 'px';
 		}
 
 		function setSource (newSource) {
@@ -155,12 +171,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				img.style.display = 'block';
 				img.onload = function () {
 					wrap.innerHTML = '';
-					wrap.appendChild(img);
 					centerImage(img);
-					var name = 'layout.elm' + i;
-					dispatcher.off(name).on(name, function () {
-						centerImage(img);
-					});
+					wrap.appendChild(img);
 				}
 				return wrap;
 			});

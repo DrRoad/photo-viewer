@@ -138,6 +138,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 			for (var i = -1; i < 2; i++) {
 				var page = document.createElement('div');
+				page.className = 'slideviewer-slide';
 				var s = page.style;
 				s.position = 'absolute';
 				s.top = '0';
