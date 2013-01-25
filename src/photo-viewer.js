@@ -249,7 +249,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			loaderElm = newLoaderElm;
 			content.innerHTML = '';
 			content.appendChild(loaderElm);
-			slideviewer.invalidate();
+			if (slideviewer) slideviewer.invalidate();
 			return self;
 		}
 
