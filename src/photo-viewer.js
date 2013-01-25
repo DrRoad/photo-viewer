@@ -89,6 +89,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			if (appShown) afterAppShow();
 		});
 
+		updateTitle(index, urls.length);
+
 		function toggleTitleBar() {
 			if (topbarCover.style.visibility == '') {
 				showTitleBar();
@@ -117,6 +119,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				s.webkitTransform = 'translate3d(0, -100%, 0)';
 			}
 			topbarCover.style.visibility = '';
+		}
+
+		function updateTitle(i, len) {
+			if (opts.automaticTitles) {
+				title.innerText = (i + 1) + " of " + len;
+			}
 		}
 
 		var appShown = false;
@@ -184,9 +192,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			slideviewer = new SlideViewer(wrapper);
 			slideviewer.on('flip', function () {
 				var i = slideviewer.page();
-				if (opts.automaticTitles) {
-					title.innerText = (i + 1) + " of " + urls.length;
-				}
+				updateTitle(i, urls.length);
 				dispatcher.fire('flip', i);
 			});
 
