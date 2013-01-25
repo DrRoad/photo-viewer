@@ -183,6 +183,10 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		page.addEventListener('appShow', appShow, false);
 
 		function attachTo(page) {
+			function appLayout() {
+				dispatcher.fire('layout');
+			}
+
 			function appHide() {
 				page.removeEventListener('appShow', appShow, false);
 				page.removeEventListener('appLayout', appLayout, false);
@@ -200,10 +204,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				slideviewer.on('move', hideTitleBar);
 			}
 
-			page.addEventListener('appLayout', function () {
-				dispatcher.fire('layout');
-			}, false);
-
+			page.addEventListener('appLayout', appLayout, false);
 			page.addEventListener('appHide', appHide, false);
 
 			if (!appShown) {
