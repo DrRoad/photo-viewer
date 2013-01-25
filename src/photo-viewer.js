@@ -27,6 +27,14 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		return Math.round(num * factor) / factor;
 	}
 
+	function afterDOMLoad (func) {
+		if (window.cards && window.cards.ready) {
+			cards.ready(func);
+		} else {
+			setTimeout(func, 10);
+		}
+	}
+
 	// PhotoViewer takes over the content pane of your app screen.
 	// It wraps SlideViewer for the common case of simply displaying
 	// a set of photos in the content of your app.
@@ -36,6 +44,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var unbindTableLayout;
 		var content = page.querySelector('.app-content');
 		var topbar = page.querySelector('.app-topbar');
+		var topbar2 = document.createElement('div');
 		var title = page.querySelector('.app-title');
 
 		opts = opts || {};
@@ -45,29 +54,64 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 		function toggleTitleBar () {
 			var s = topbar.style;
+			var ss = topbar2.style;
 			if (App.platform == 'ios') {
 				s.opacity = s.opacity != '0' ? '0' : '1';
 			} else {
 				s.transform = s.transform == '' ? 'translate3d(0, -100%, 0)' : '';
 				s.webkitTransform = s.webkitTransform == '' ? 'translate3d(0, -100%, 0)' : '';
 			}
+			ss.visibility = ss.visibility == '' ? 'hidden' : '';
 		}
 
-		function attachTo (page) {
-			function appShow () {
-				if (App.platform == 'ios') {
-					topbar.style.transition = 'opacity 0.5s ease-in-out';
-					topbar.style.webkitTransition = 'opacity 0.5s ease-in-out';
-				} else {
-					topbar.style.transition = 'transform 0.5s ease-in-out';
-					topbar.style.webkitTransition = '-webkit-transform 0.5s ease-in-out';
-				}
-				content.innerHTML = '';
-				content.appendChild(wrapper);
-				slideviewer.refreshSize();
-				dispatcher.fire('layout');
+		function showTitleBar () {
+			if (App.platform == 'ios') {
+				topbar.style.opacity = '1';
+			} else {
+				topbar.style.transform = '';
+				topbar.style.webkitTransform = '';
 			}
+			topbar2.style.visibility = 'hidden';
+		}
 
+		var wrapper = document.createElement('div');
+		wrapper.style.width = '100%';
+		wrapper.style.height = '100%';
+
+		var appShown = false;
+		function afterAppShow () {
+			if (App.platform == 'ios') {
+				topbar.style.transition = 'opacity 0.5s ease-in-out';
+				topbar.style.webkitTransition = 'opacity 0.5s ease-in-out';
+			} else {
+				topbar.style.transition = 'transform 0.5s ease-in-out';
+				topbar.style.webkitTransition = '-webkit-transform 0.5s ease-in-out';
+			}
+			topbar2.addEventListener("touchstart", showTitleBar, false);
+			content.innerHTML = '';
+			content.appendChild(wrapper);
+			slideviewer.refreshSize();
+			dispatcher.fire('layout');
+
+			// A bit of a hack, but this allows us to capture taps
+			// anywhere on the screen, including on the titlebar.
+			topbar2.style.position = "absolute";
+			topbar2.style.top = topbar.offsetTop + 'px';
+			topbar2.style.left = topbar.offsetLeft + 'px';
+			topbar2.style.width = topbar.offsetWidth + 'px';
+			topbar2.style.height = topbar.offsetHeight + 'px';
+			topbar2.style.opacity = "0";
+			topbar2.style.visibility = "hidden";
+			page.appendChild(topbar2);
+		}
+
+		function appShow () {
+			appShown = true;
+		}
+
+		page.addEventListener('appShow', appShow, false);
+
+		function attachTo (page) {
 			function appLayout () {
 				slideviewer.refreshSize();
 				dispatcher.fire('layout');
@@ -95,11 +139,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					}(wrappers[i]));
 				}
 			}
-
-			var wrapper = document.createElement('div');
-			wrapper.style.width = '100%';
-			wrapper.style.height = '100%';
-
 			slideviewer = new SlideViewer(wrapper);
 			slideviewer.on('flip', function () {
 				var i = slideviewer.page();
@@ -113,17 +152,15 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				});
 			}
 
-			page.addEventListener('appShow', appShow, false);
 			page.addEventListener('appLayout', appLayout, false);
 			page.addEventListener('appHide', appHide, false);
+			if (!appShown) {
+				page.removeEventListener('appShow', appShow, false);
+				page.addEventListener('appShow', afterAppShow, false);
+			}
 			if (opts.autoHideTitle) {
 				Clickable(wrapper);
 				wrapper.addEventListener('click', toggleTitleBar, false);
-				document.body.addEventListener('touchstart', function (e) {
-					if (topbar.style.opacity == '0') {
-						topbar.style.opacity = '1';
-					}
-				}, false);
 			}
 		}
 
@@ -210,15 +247,18 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		// images are loading.
 		self.setLoader = function (newLoaderElm) {
 			loaderElm = newLoaderElm;
-			slideviewer.invalidate();
 			content.innerHTML = '';
 			content.appendChild(loaderElm);
+			slideviewer.invalidate();
 			return self;
 		}
 
-		if (page !== undefined) attachTo(page);
-		if (urls !== undefined) setSource(urls);
-		if (index !== undefined) slideviewer.setPage(index);
+		afterDOMLoad(function () {
+			if (page !== undefined) attachTo(page);
+			if (urls !== undefined) setSource(urls);
+			if (index !== undefined) slideviewer.setPage(index);
+			if (appShown) afterAppShow();
+		});
 
 		content.appendChild(loaderElm);
 	}
