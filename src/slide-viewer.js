@@ -297,6 +297,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			var prevX = startX;
 			var prevY = startY;
 			var directionLocked = false;
+			var startedMoving = false;
 
 			slider.style[transitionDuration] = '0s';
 			inputhandler.on('move', onMove);
@@ -310,9 +311,10 @@ var SlideViewer = (function (Zepto, jQuery) {
 				var absY = Math.abs(prevY - startY);
 
 				// We take a 10px buffer to figure out the direction of the swipe
-				if (absX < 10 && absY < 10) {
+				if (absX < 10 && absY < 10 && !startedMoving) {
 					return;
 				}
+				startedMoving = true;
 
 				// We are scrolling vertically, so skip SlideViewer and give the control back to the browser
 				if (absY > absX && !directionLocked) {
@@ -330,7 +332,6 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 				e.preventDefault();
 				inputhandler.off('end').on('end', onEnd);
-				inputhandler.off('transitionEnd').on('transitionEnd', onTransitionEnd);
 				setPos(newX);
 				dispatcher.fire('move', newX);
 			}
@@ -338,17 +339,28 @@ var SlideViewer = (function (Zepto, jQuery) {
 			function onEnd (e, point) {
 				inputhandler.off('move');
 				inputhandler.off('end');
+				inputhandler.on('transitionEnd', onTransitionEnd);
 
 				prevX = point.pageX;
 				var deltaX = prevX - startX;
 				var dist = Math.abs(deltaX);
+				var newX;
 
 				if (xPos > 0 || xPos < minX) dist *= 0.15;
 
 				if (dist < snapThreshold) {
 					var time = Math.floor(300 * dist / snapThreshold) + 'ms';
 					slider.style[transitionDuration] = time;
-					setPos(-page * pageWidth);
+
+					newX = -page * pageWidth;
+					if (newX == xPos) {
+						// Many browsers don't give us the transitionEnd event if the
+						// start and end states of the transition are the same. Thus,
+						// we just fire it immediately.
+						onTransitionEnd();
+					} else {
+						setPos(newX);
+					}
 					return;
 				}
 
@@ -372,6 +384,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			}
 
 			function onTransitionEnd (e) {
+				inputhandler.off('transitionEnd');
 				self.setPage(page);
 				inputhandler.on('start', onStart);
 			}
