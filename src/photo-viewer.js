@@ -27,7 +27,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		return Math.round(num * factor) / factor;
 	}
 
-	function afterDOMLoad (func) {
+	function afterDOMLoad(func) {
 		if (window.cards && window.cards.ready) {
 			cards.ready(func);
 		} else {
@@ -35,51 +35,92 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		}
 	}
 
+	function forEach(arr, func) {
+		for (var i = 0; i < arr.length; i++) {
+			func(arr[i], i);
+		}
+	}
+
 	// PhotoViewer takes over the content pane of your app screen.
 	// It wraps SlideViewer for the common case of simply displaying
 	// a set of photos in the content of your app.
-	function PhotoViewer (page, urls, index, opts) {
+	function PhotoViewer(page, urls, index, opts) {
 		var self = this;
 		var slideviewer;
-		var unbindTableLayout;
+		var dispatcher = new Dispatcher();
 		var content = page.querySelector('.app-content');
 		var topbar = page.querySelector('.app-topbar');
-		var topbar2 = document.createElement('div');
 		var title = page.querySelector('.app-title');
+
+		var topbarCover = document.createElement('div');
+		var wrapper = document.createElement('div');
+		wrapper.style.width = '100%';
+		wrapper.style.height = '100%';
+
+		var loaderElm = document.createElement('div');
+		loaderElm.style.width = '100%';
+		loaderElm.style.height = '100%';
+		loaderElm.style.background = 'url(' + loaderImg + ') no-repeat center center';
+
+		// If you want the loader element to be custom skinned for your application,
+		// you can pass in an element here to be used for a placeholder while your
+		// images are loading.
+		self.setLoader = function (newLoaderElm) {
+			loaderElm = newLoaderElm;
+			content.innerHTML = '';
+			content.appendChild(loaderElm);
+			if (slideviewer) slideviewer.invalidate();
+			return self;
+		}
+		self.on = dispatcher.on;
+		self.off = dispatcher.off;
+
+		content.appendChild(loaderElm);
 
 		opts = opts || {};
 		for (var o in defaultOpts) {
 			opts[o] = opts[o] === undefined ? defaultOpts[o] : opts[o];
 		}
 
-		function toggleTitleBar () {
-			var s = topbar.style;
-			var ss = topbar2.style;
-			if (App.platform == 'ios') {
-				s.opacity = s.opacity != '0' ? '0' : '1';
+		afterDOMLoad(function () {
+			if (page !== undefined) attachTo(page);
+			if (urls !== undefined) setSource(urls);
+			if (index !== undefined) slideviewer.setPage(index);
+			if (appShown) afterAppShow();
+		});
+
+		function toggleTitleBar() {
+			if (topbarCover.style.visibility == '') {
+				showTitleBar();
 			} else {
-				s.transform = s.transform == '' ? 'translate3d(0, -100%, 0)' : '';
-				s.webkitTransform = s.webkitTransform == '' ? 'translate3d(0, -100%, 0)' : '';
+				hideTitleBar();
 			}
-			ss.visibility = ss.visibility == '' ? 'hidden' : '';
 		}
 
-		function showTitleBar () {
+		function showTitleBar() {
+			var s = topbar.style;
 			if (App.platform == 'ios') {
 				topbar.style.opacity = '1';
 			} else {
 				topbar.style.transform = '';
 				topbar.style.webkitTransform = '';
 			}
-			topbar2.style.visibility = 'hidden';
+			topbarCover.style.visibility = 'hidden';
 		}
 
-		var wrapper = document.createElement('div');
-		wrapper.style.width = '100%';
-		wrapper.style.height = '100%';
+		function hideTitleBar() {
+			var s = topbar.style;
+			if (App.platform == 'ios') {
+				s.opacity = '0';
+			} else {
+				s.transform = 'translate3d(0, -100%, 0)';
+				s.webkitTransform = 'translate3d(0, -100%, 0)';
+			}
+			topbarCover.style.visibility = '';
+		}
 
 		var appShown = false;
-		function afterAppShow () {
+		function afterAppShow() {
 			if (App.platform == 'ios') {
 				topbar.style.transition = 'opacity 0.5s ease-in-out';
 				topbar.style.webkitTransition = 'opacity 0.5s ease-in-out';
@@ -87,22 +128,44 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				topbar.style.transition = 'transform 0.5s ease-in-out';
 				topbar.style.webkitTransition = '-webkit-transform 0.5s ease-in-out';
 			}
-			topbar2.addEventListener("touchstart", showTitleBar, false);
+			topbarCover.addEventListener("touchstart", showTitleBar, false);
+
+			// We don't want to have the slideview in the page when we
+			// are transitioning in, as having a 3d transform within a
+			// 3d transform makes things really laggy. Hence, we wait
+			// until after the app is shown to add the "real" slideview
+			// to the page.
 			content.innerHTML = '';
 			content.appendChild(wrapper);
+
 			slideviewer.refreshSize();
 			dispatcher.fire('layout');
 
 			// A bit of a hack, but this allows us to capture taps
 			// anywhere on the screen, including on the titlebar.
-			topbar2.style.position = "absolute";
-			topbar2.style.top = topbar.offsetTop + 'px';
-			topbar2.style.left = topbar.offsetLeft + 'px';
-			topbar2.style.width = topbar.offsetWidth + 'px';
-			topbar2.style.height = topbar.offsetHeight + 'px';
-			topbar2.style.opacity = "0";
-			topbar2.style.visibility = "hidden";
-			page.appendChild(topbar2);
+			var cs = topbarCover.style;
+			cs.position = "absolute";
+			cs.top = topbar.offsetTop + 'px';
+			cs.left = topbar.offsetLeft + 'px';
+			cs.width = topbar.offsetWidth + 'px';
+			cs.height = topbar.offsetHeight + 'px';
+			cs.opacity = "0";
+			cs.visibility = "hidden";
+			page.appendChild(topbarCover);
+
+			var wrappers = wrapper.querySelectorAll('.slideviewer-slide');
+			forEach(wrappers, function (wrapper) {
+				dispatcher.on('layout', function () {
+					var img = wrapper.querySelector('img');
+					if (img) {
+						centerImage(img);
+					}
+				});
+			});
+
+			dispatcher.on('layout', function () {
+				slideviewer.refreshSize();
+			});
 		}
 
 		function appShow () {
@@ -111,60 +174,44 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 		page.addEventListener('appShow', appShow, false);
 
-		function attachTo (page) {
-			function appLayout () {
-				slideviewer.refreshSize();
-				dispatcher.fire('layout');
-			}
-
-			function appHide () {
+		function attachTo(page) {
+			function appHide() {
 				page.removeEventListener('appShow', appShow, false);
 				page.removeEventListener('appLayout', appLayout, false);
 				page.removeEventListener('appHide', appHide, false);
 			}
 
-			function flip (i) {
-				if (opts.automaticTitles) {
-					title.innerText = (i + 1) + " of " + urls.length;
-				}
-				var wrappers = wrapper.querySelectorAll('.slideviewer-slide');
-
-				dispatcher.off('layout.imgs');
-				for (var i = 0; i < wrappers.length; i++) {
-					(function (wrapper) {
-						dispatcher.on('layout.imgs', function () {
-							var img = wrapper.querySelector('img');
-							if (img) centerImage(img);
-						});
-					}(wrappers[i]));
-				}
-			}
 			slideviewer = new SlideViewer(wrapper);
 			slideviewer.on('flip', function () {
 				var i = slideviewer.page();
-				flip(i);
+				if (opts.automaticTitles) {
+					title.innerText = (i + 1) + " of " + urls.length;
+				}
 				dispatcher.fire('flip', i);
 			});
 
 			if (App.platform == 'ios') {
-				slideviewer.on('move', function () {
-					topbar.style.opacity = "0";
-				});
+				slideviewer.on('move', hideTitleBar);
 			}
 
-			page.addEventListener('appLayout', appLayout, false);
+			page.addEventListener('appLayout', function () {
+				dispatcher.fire('layout');
+			}, false);
+
 			page.addEventListener('appHide', appHide, false);
+
 			if (!appShown) {
 				page.removeEventListener('appShow', appShow, false);
 				page.addEventListener('appShow', afterAppShow, false);
 			}
+
 			if (opts.autoHideTitle) {
 				Clickable(wrapper);
 				wrapper.addEventListener('click', toggleTitleBar, false);
 			}
 		}
 
-		function centerImage (img) {
+		function centerImage(img) {
 			// I shouldn't really have to do this, but offsetHeight and friends
 			// seem to be failing sparadically. Oh well, we can do this manually!
 			var h = img.naturalHeight;
@@ -192,7 +239,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			s.height = h + 'px';
 		}
 
-		function setSource (newSource) {
+		function setSource(newSource) {
 			if (!Array.isArray(newSource)) {
 				throw "PhotoViewer setSource expects an array of photo URLs for a source, '" + newSource + "' given.";
 			}
@@ -232,34 +279,5 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				return wrap;
 			});
 		}
-
-		var dispatcher = new Dispatcher();
-		self.on = dispatcher.on;
-		self.off = dispatcher.off;
-
-		var loaderElm = document.createElement('div');
-		loaderElm.style.width = '100%';
-		loaderElm.style.height = '100%';
-		loaderElm.style.background = 'url(' + loaderImg + ') no-repeat center center';
-
-		// If you want the loader element to be custom skinned for your application,
-		// you can pass in an element here to be used for a placeholder while your
-		// images are loading.
-		self.setLoader = function (newLoaderElm) {
-			loaderElm = newLoaderElm;
-			content.innerHTML = '';
-			content.appendChild(loaderElm);
-			if (slideviewer) slideviewer.invalidate();
-			return self;
-		}
-
-		afterDOMLoad(function () {
-			if (page !== undefined) attachTo(page);
-			if (urls !== undefined) setSource(urls);
-			if (index !== undefined) slideviewer.setPage(index);
-			if (appShown) afterAppShow();
-		});
-
-		content.appendChild(loaderElm);
 	}
 }(window.Zepto, window.jQuery, App));
