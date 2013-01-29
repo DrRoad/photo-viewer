@@ -27,9 +27,9 @@
 
 		<script src="http://cdn.kik.com/cards/0/cards.js"></script>
 		<script src="http://cdn.kik.com/app/1/app.js"></script>
-		<script src="../src/dispatcher.js"></script>
-		<script src="../src/slide-viewer.js"></script>
-		<script src="../src/photo-viewer.js"></script>
+		<script src="../../src/dispatcher.js"></script>
+		<script src="../../src/slide-viewer.js"></script>
+		<script src="../../src/photo-viewer.js"></script>
 
 		<script>
 		(function (App, PhotoViewer) {
@@ -73,8 +73,8 @@
 				'http://longlivejudyism.files.wordpress.com/2010/11/eight-ball.jpg',
 				'http://10.10.10.230:6688/cccchtheoundd',
 			];
-// 			App.load('viewer', {images: images, index: 9});
-// 			return;
+			App.load('gallery', {images: images, index: 9});
+			return;
 
 			try {
 				App.restore();
