@@ -54,8 +54,12 @@ iframe {
 		window.location.replace('phone.html');
 	}
 	back.onclick = function () {
-		iframe.contentWindow.App.back();
+		var w = iframe.contentWindow;
+		if (w && w.App) w.App.back();
+		else iframe.contentWindow.history.back();
 	}
+	// TODO: Add phantom limb support to simulate touch events?
+	// https://github.com/brian-c/phantom-limb/
 }())
 </script>
 </body>

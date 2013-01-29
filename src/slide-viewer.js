@@ -40,17 +40,49 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 			return transitionEnd[vendor];
 		})();
+		var touchID = '';
+		var lastTouchMove;
+
+		function findTouch(touches, touchID) {
+			for (var i = 0; i < touches.length; i++) {
+				if (touches[i].identifier == touchID) return touches[i];
+			}
+			return null;
+		}
 
 		function handleEvent (e) {
 			var t = e.type;
 			if (t == startEvent) {
-				if (hasTouch && e.touches.length > 1) return;
-				   dispatcher.fire('start', e, hasTouch ? e.changedTouches[0] : e);
-			} else if (t == moveEvent) dispatcher.fire('move', e, hasTouch ? e.touches[0] : e);
-			else if (t == cancelEvent) dispatcher.fire('end', e, hasTouch ? e.changedTouches[0] : e);
-			else if (t == endEvent) dispatcher.fire('end', e, hasTouch ? e.changedTouches[0] : e);
-			else if (t == resizeEvent) dispatcher.fire('resize', e);
-			else if (t == transitionEndEvent) dispatcher.fire('transitionEnd', e);
+				if (hasTouch) {
+					if (touchID !== '') return;
+					touchID = e.changedTouches[0].identifier;
+				}
+				dispatcher.fire('start', e, hasTouch ? e.changedTouches[0] : e);
+			} else if (t == moveEvent) {
+				if (!hasTouch) {
+					dispatcher.fire('move', e, e);
+					return
+				}
+
+				var touch = findTouch(e.touches, touchID);
+				lastTouchMove = touch;
+				dispatcher.fire('move', e, touch);
+			} else if (t == cancelEvent || t == endEvent) {
+				if (!hasTouch) {
+					dispatcher.fire('end', e , e);
+					return;
+				}
+				if (touchID === '') return;
+
+				var touch = findTouch(e.changedTouches, touchID);
+				if (!touch) touch = findTouch(e.touches, touchID);
+				dispatcher.fire('end', e, touch);
+				touchID = '';
+			} else if (t == resizeEvent) {
+				dispatcher.fire('resize', e);
+			} else if (t == transitionEndEvent) {
+				dispatcher.fire('transitionEnd', e);
+			}
 		}
 
 		var dispatcher = new Dispatcher();
