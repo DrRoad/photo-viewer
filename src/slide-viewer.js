@@ -19,6 +19,49 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 	return SlideViewer;
 
+	function Touch(domTouch) {
+		var self = this;
+		self.x = domTouch.pageX;
+		self.y = domTouch.pageY;
+		self.id = domTouch.identifier;
+	}
+
+	function Touchable(elm, opts) {
+		var self = this;
+		var listeners = [];
+		function attach(elm, ev, cb) {
+			listeners.push({elm: elm, ev: ev, cb: cb});
+			elm.addEventListener(ev, cb, false);
+		}
+
+		attach(elm, 'touchstart', onTouchStart);
+		attach(elm, 'touchmove', onTouchMove);
+		attach(elm, 'touchend', onTouchEnd);
+		attach(elm, 'touchcancel', onTouchEnd);
+
+		var fingers = [];
+		var numTouches = 0;
+		var currentHand;
+
+		function onTouchStart(ev) {
+			currentHand.fire('end');
+			numTouches++;
+			currentHand = new Hand(numTouches);
+		}
+
+		self.destroy = function () {
+			for (var i = 0; i < listeners.length; i++) {
+				var l = listeners[i];
+				l.elm.removeEventListener(l.ev, l.cb, false);
+			}
+		}
+
+		var dispatcher = new Dispatcher();
+		self.on = dispatcher.on;
+		self.off = dispatcher.off;
+	}
+
+
 	function InputHandler (vendor) {
 		var self = this;
 		var hasTouch = 'ontouchstart' in window;
