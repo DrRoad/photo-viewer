@@ -28,6 +28,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 	function Touchable(elm, opts) {
 		var self = this;
+
 		var listeners = [];
 		function attach(elm, ev, cb) {
 			listeners.push({elm: elm, ev: ev, cb: cb});
@@ -129,13 +130,13 @@ var SlideViewer = (function (Zepto, jQuery) {
 		}
 
 		var dispatcher = new Dispatcher();
-		this.on = dispatcher.on;
-		this.off = dispatcher.off;
+		self.on = dispatcher.on;
+		self.off = dispatcher.off;
 
 		var wrapper;
 		var slider;
-		this.attach = function (newWrapper, newSlider) {
-			if (wrapper || slider) this.detach();
+		self.attach = function (newWrapper, newSlider) {
+			if (wrapper || slider) self.detach();
 			wrapper = newWrapper;
 			slider = newSlider;
 			window.addEventListener(resizeEvent, handleEvent, false);
@@ -144,17 +145,17 @@ var SlideViewer = (function (Zepto, jQuery) {
 			wrapper.addEventListener(endEvent, handleEvent, false);
 			wrapper.addEventListener(cancelEvent, handleEvent, false);
 			slider.addEventListener(transitionEndEvent, handleEvent, false);
-			return this;
+			return self;
 		}
 
-		this.detach = function () {
+		self.detach = function () {
 			window.removeEventListener(resizeEvent, handleEvent, false);
 			wrapper.removeEventListener(startEvent, handleEvent, false);
 			wrapper.removeEventListener(moveEvent, handleEvent, false);
 			wrapper.removeEventListener(endEvent, handleEvent, false);
 			wrapper.removeEventListener(cancelEvent, handleEvent, false);
 			slider.removeEventListener(transitionEndEvent, handleEvent, false);
-			return this;
+			return self;
 		}
 	}
 

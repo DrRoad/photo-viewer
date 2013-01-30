@@ -1,4 +1,40 @@
 var PhotoViewer = (function (Zepto, jQuery, App) {
+	function Zoomable(viewport, element) {
+		var zoomed = false;
+		var x = 0;
+		var y = 0;
+		var z = 0;
+		var startDist;
+		function dist(p1, p2) {
+			p1 = p1.x ? p1 : p1.lastPoint;
+			p2 = p2.x ? p2 : p2.lastPoint;
+			return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+		}
+		var zoom = 1;
+		var scale = 1;
+		Touchy(viewport, {
+			one: function (hand, finger) {
+				console.log(hand, finger);
+				if (!zoomed) return;
+			},
+			two: function (hand, finger1, finger2) {
+				console.log(hand, finger1, finger2);
+				startDist = dist(finger1, finger2);
+				hand.on('move', function (points) {
+					console.log(points);
+					var newDist = dist(points[0], points[1]);
+					var ratio = newDist / startDist;
+					scale = round(ratio * zoom, 2);
+					console.log(startDist, newDist, ratio, scale);
+					element.style.webkitTransform = 'scale('+scale+','+scale+')';
+				});
+				hand.on('end', function () {
+					zoom = scale;
+				});
+			},
+		}).stopWindowBounce();
+		console.log(viewport, element);
+	}
 	var loaderImg = [
 		"data:image/gif;base64,",
 		"R0lGODlhEAAQAPIAAAAAAP///zw8PLy8vP///5ycnHx8fGxsbCH+GkNyZWF0ZWQgd2l0aCBhamF4",
@@ -282,6 +318,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					wrap.innerHTML = '';
 					centerImage(img);
 					wrap.appendChild(img);
+					new Zoomable(wrap, img);
 				}
 				return wrap;
 			});
