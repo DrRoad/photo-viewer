@@ -8,6 +8,9 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			p2 = p2.x ? p2 : p2.lastPoint;
 			return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 		}
+		function abs(n) {
+			return Math.abs(n);
+		}
 		// t: Time, [0...d]
 		// b: Start value
 		// c: Change in value
@@ -21,23 +24,66 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		function setTransform() {
 			var transform = 'translate3d(' + round(x * scale, 2) + 'px,' + round(y * scale, 2) + 'px,0px) scale(' + round(scale, 2) + ',' + round(scale, 2) + ') ';
 			element.style.webkitTransform = transform;
-			title.innerHTML = '<small>' + transform + '</small>';
+			title.innerHTML = '<small style="font-size: 11px">' + transform + '</small>';
 		}
 		function dur(t) {
 			element.style.webkitTransitionDuration = round(t, 2) + 's';
 		}
+		function viewHalfX() {
+			return viewport.offsetWidth / (2 * scale);
+		}
+		function viewHalfY() {
+			return viewport.offsetHeight / (2 * scale);
+		}
+		function findMaxX() {
+			return abs(element.offsetWidth / 2 - viewHalfX());
+		}
+		function findMaxY() {
+			return abs(element.offsetHeight / 2 - viewHalfY());
+		}
+		var prevTouchStart = 0;
 		Touchy(viewport, true, {
 		one: function (hand, finger) {
 				console.log(hand, finger);
-				if (scale <= 1) return;
-				slideviewer.disable();
 				
+				var t = Date.now();
+				if (t - prevTouchStart < 300) {
+					if (scale <= 1) {
+						x = -(finger.lastPoint.x - viewHalfX());
+						y = -(finger.lastPoint.y - viewHalfY());
+						scale = 2;
+						dur(1);
+						setTransform();
+					} else {
+						scale = 1;
+						x = 0;
+						y = 0;
+						dur(1);
+						setTransform();
+					}
+					prevTouchStart = 0;
+					return;
+				}
+				prevTouchStart = t;
+				
+				if (scale <= 1) return;
+			   
 				var prevX = finger.lastPoint.x;
 				var prevY = finger.lastPoint.y;
 				
 				finger.on('move', function (point) {
 					x += (point.x - prevX) / scale;
 					y += (point.y - prevY) / scale;
+					
+					maxX = findMaxX();
+					maxY = findMaxY();
+					
+					if (Math.abs(x) < maxX && Math.abs(y) < maxY) {
+						slideviewer.disable();
+					} else {
+						slideviewer.enable();
+					}
+					
 					prevX = point.x;
 					prevY = point.y;
 					dur(0);
@@ -45,11 +91,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				});
 				
 				finger.on('end', function (point) {
-					maxX = element.offsetWidth / 2 - viewport.offsetWidth / (2 * scale);
+					var maxX = findMaxX();
 					if (Math.abs(x) > maxX) {
 						x = x > 0 ? maxX : -maxX;
 					}
-					maxY = element.offsetHeight / 2 - viewport.offsetHeight / (2 * scale);
+					var maxY = findMaxY();
 					if (Math.abs(y) > maxY) {
 						y = y > 0 ? maxY : -maxY;
 					}
@@ -376,10 +422,14 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				img.style.margin = '0 auto';
 				img.style.display = 'block';
 				img.onload = function () {
-					wrap.innerHTML = '';
-					centerImage(img);
-					wrap.appendChild(img);
-					new Zoomable(slideviewer, title, wrap, img);
+					// naturalHeight might not be initialized
+					// yet if I don't wait a bit.
+					setTimeout(function () {
+						wrap.innerHTML = '';
+						centerImage(img);
+						wrap.appendChild(img);
+						new Zoomable(slideviewer, title, wrap, img);
+					}, 10);
 				}
 				return wrap;
 			});
