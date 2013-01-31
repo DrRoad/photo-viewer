@@ -1,65 +1,93 @@
 var PhotoViewer = (function (Zepto, jQuery, App) {
 	function Zoomable(slideviewer, title, viewport, element) {
-		var zoomed = false;
 		var x = 0;
 		var y = 0;
-		var startDist;
+		var scale = 1;
 		function dist(p1, p2) {
 			p1 = p1.x ? p1 : p1.lastPoint;
 			p2 = p2.x ? p2 : p2.lastPoint;
 			return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 		}
-		var zoom = 1;
-		var scale = 1;
+		// t: Time, [0...d]
+		// b: Start value
+		// c: Change in value
+		// d: Total duration
+		function easeInOutCubic(t, b, c, d) {
+			t /= d/2;
+			if (t < 1) return c/2*t*t*t + b;
+			t -= 2;
+			return c/2*(t*t*t + 2) + b;
+		};
 		function setTransform() {
-			var transform = 'translate3d(' + x + 'px,' + y + 'px,0px) scale(' + scale + ',' + scale + ') ';
+			var transform = 'translate3d(' + round(x * scale, 2) + 'px,' + round(y * scale, 2) + 'px,0px) scale(' + round(scale, 2) + ',' + round(scale, 2) + ') ';
 			element.style.webkitTransform = transform;
-			title.innerHTML = transform;
+			title.innerHTML = '<small>' + transform + '</small>';
 		}
 		function dur(t) {
-			element.style.webkitTransitionDuration = t + 's';
+			element.style.webkitTransitionDuration = round(t, 2) + 's';
 		}
 		Touchy(viewport, true, {
 		one: function (hand, finger) {
 				console.log(hand, finger);
-				if (zoom <= 1) return;
+				if (scale <= 1) return;
 				slideviewer.disable();
+				
 				var prevX = finger.lastPoint.x;
 				var prevY = finger.lastPoint.y;
+				
 				finger.on('move', function (point) {
-					var dx = point.x - prevX;
-					var dy = point.y - prevY;
-					x = round(x + dx, 2);
-					y = round(y + dy, 2);
+					x += (point.x - prevX) / scale;
+					y += (point.y - prevY) / scale;
 					prevX = point.x;
 					prevY = point.y;
 					dur(0);
 					setTransform();
 				});
+				
+				finger.on('end', function (point) {
+					maxX = element.offsetWidth / 2 - viewport.offsetWidth / (2 * scale);
+					if (Math.abs(x) > maxX) {
+						x = x > 0 ? maxX : -maxX;
+					}
+					maxY = element.offsetHeight / 2 - viewport.offsetHeight / (2 * scale);
+					if (Math.abs(y) > maxY) {
+						y = y > 0 ? maxY : -maxY;
+					}
+					dur(1);
+					setTransform();
+				});
 			},
 			two: function (hand, finger1, finger2) {
 				slideviewer.disable();
+				
 				console.log(hand, finger1, finger2);
-				startDist = dist(finger1, finger2);
+				prevDist = dist(finger1, finger2);
+				
 				hand.on('move', function (points) {
 					console.log(points);
 					var newDist = dist(points[0], points[1]);
-					var ratio = newDist / startDist;
-					scale = round(ratio * zoom, 2);
-					console.log(startDist, newDist, ratio, scale);
+					var ratio = newDist / prevDist;
+					prevDist = newDist;
+					scale *= ratio;
 					dur(0);
 					setTransform();
 				});
+				
 				hand.on('end', function () {
-					zoom = scale;
-					if (zoom <= 1) {
+					var minZoom = 1;
+					var maxZoom = 4;
+					if (scale <= 1) {
 						slideviewer.enable();
 					}
-					if (zoom < 1) {
-						zoom = 1;
-						scale = 1;
+					if (scale < minZoom) {
+						scale = minZoom;
 						x = 0;
 						y = 0;
+						dur(1);
+						setTransform();
+					}
+					if (scale > maxZoom) {
+						scale = maxZoom;
 						dur(1);
 						setTransform();
 					}
