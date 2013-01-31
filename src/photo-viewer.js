@@ -36,10 +36,14 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			return viewport.offsetHeight / (2 * scale);
 		}
 		function findMaxX() {
-			return abs(element.offsetWidth / 2 - viewHalfX());
+			var maxX = element.offsetWidth / 2 - viewHalfX();
+			if (maxX < 0) return 0;
+			else return maxX;
 		}
 		function findMaxY() {
-			return abs(element.offsetHeight / 2 - viewHalfY());
+			var maxY = element.offsetHeight / 2 - viewHalfY();
+			if (maxY < 0) return 0;
+			else return maxY;
 		}
 		var prevTouchStart = 0;
 		Touchy(viewport, true, {
