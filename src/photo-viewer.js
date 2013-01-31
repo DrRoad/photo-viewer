@@ -45,37 +45,27 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			if (maxY < 0) return 0;
 			else return maxY;
 		}
-		var prevTouchStart = 0;
+		function boundXandY() {
+			var maxX = findMaxX();
+			if (Math.abs(x) > maxX) {
+				x = x > 0 ? maxX : -maxX;
+			}
+			var maxY = findMaxY();
+			if (Math.abs(y) > maxY) {
+				y = y > 0 ? maxY : -maxY;
+			}
+		}
+		var prevTouchEnd = 0;
 		Touchy(viewport, true, {
 		one: function (hand, finger) {
 				console.log(hand, finger);
-				
-				var t = Date.now();
-				if (t - prevTouchStart < 300) {
-					if (scale <= 1) {
-						x = -(finger.lastPoint.x - viewHalfX());
-						y = -(finger.lastPoint.y - viewHalfY());
-						scale = 2;
-						dur(1);
-						setTransform();
-					} else {
-						scale = 1;
-						x = 0;
-						y = 0;
-						dur(1);
-						setTransform();
-					}
-					prevTouchStart = 0;
-					return;
-				}
-				prevTouchStart = t;
-				
-				if (scale <= 1) return;
 			   
 				var prevX = finger.lastPoint.x;
 				var prevY = finger.lastPoint.y;
 				
 				finger.on('move', function (point) {
+					prevTouchEnd = 0;
+					if (scale <= 1) return;
 					x += (point.x - prevX) / scale;
 					y += (point.y - prevY) / scale;
 					
@@ -95,19 +85,34 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				});
 				
 				finger.on('end', function (point) {
-					var maxX = findMaxX();
-					if (Math.abs(x) > maxX) {
-						x = x > 0 ? maxX : -maxX;
+					var t = Date.now();
+					if (t - prevTouchEnd < 300) {
+						if (scale <= 1) {
+							x = -(finger.lastPoint.x - viewHalfX());
+							y = -(finger.lastPoint.y - viewHalfY());
+							scale = 2;
+							boundXandY();
+							dur(1);
+							setTransform();
+						} else {
+							scale = 1;
+							x = 0;
+							y = 0;
+							dur(1);
+							setTransform();
+						}
+						prevTouchEnd = 0;
+						return;
 					}
-					var maxY = findMaxY();
-					if (Math.abs(y) > maxY) {
-						y = y > 0 ? maxY : -maxY;
-					}
+					prevTouchEnd = t;
+					
+					boundXandY();
 					dur(1);
 					setTransform();
 				});
 			},
 			two: function (hand, finger1, finger2) {
+				prevTouchEnd = 0;
 				slideviewer.disable();
 				
 				console.log(hand, finger1, finger2);
