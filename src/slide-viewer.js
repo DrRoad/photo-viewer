@@ -85,7 +85,8 @@ var SlideViewer = (function (Zepto, jQuery) {
 			return transitionEnd[vendor];
 		})();
 		var touchID = '';
-		var lastTouchMove;
+		var lastTouch;
+		var touchDisabled = false;
 
 		function findTouch(touches, touchID) {
 			for (var i = 0; i < touches.length; i++) {
@@ -96,10 +97,21 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 		function handleEvent (e) {
 			var t = e.type;
+			if (t == resizeEvent) {
+				dispatcher.fire('resize', e);
+			} else if (t == transitionEndEvent) {
+				dispatcher.fire('transitionEnd', e);
+			}
+			
+			if (touchDisabled) {
+				return;
+			}
+			
 			if (t == startEvent) {
 				if (hasTouch) {
 					if (touchID !== '') return;
 					touchID = e.changedTouches[0].identifier;
+					lastTouch = e.changedTouches[0];
 				}
 				dispatcher.fire('start', e, hasTouch ? e.changedTouches[0] : e);
 			} else if (t == moveEvent) {
@@ -109,23 +121,20 @@ var SlideViewer = (function (Zepto, jQuery) {
 				}
 
 				var touch = findTouch(e.touches, touchID);
-				lastTouchMove = touch;
+				lastTouch = touch;
 				dispatcher.fire('move', e, touch);
 			} else if (t == cancelEvent || t == endEvent) {
 				if (!hasTouch) {
-					dispatcher.fire('end', e , e);
+					dispatcher.fire('end', e);
 					return;
 				}
 				if (touchID === '') return;
 
 				var touch = findTouch(e.changedTouches, touchID);
 				if (!touch) touch = findTouch(e.touches, touchID);
-				dispatcher.fire('end', e, touch);
+				lastTouch = null;
+				dispatcher.fire('end', touch);
 				touchID = '';
-			} else if (t == resizeEvent) {
-				dispatcher.fire('resize', e);
-			} else if (t == transitionEndEvent) {
-				dispatcher.fire('transitionEnd', e);
 			}
 		}
 
@@ -156,6 +165,23 @@ var SlideViewer = (function (Zepto, jQuery) {
 			wrapper.removeEventListener(cancelEvent, handleEvent, false);
 			slider.removeEventListener(transitionEndEvent, handleEvent, false);
 			return self;
+		}
+		
+		// If a touch is currently happening, simulates
+		// touchcancel. Prevents further touch events from
+		// being processed.
+		self.disableTouch = function () {
+			console.log("disabling touch", touchDisabled);
+			if (lastTouch) {
+				dispatcher.fire('end', lastTouch);
+				lastTouch = null;
+			}
+			touchDisabled = true;
+		}
+		
+		self.enableTouch = function () {
+			console.log("enabling touch", touchDisabled);
+			touchDisabled = false;
 		}
 	}
 
@@ -354,6 +380,14 @@ var SlideViewer = (function (Zepto, jQuery) {
 			dispatcher.fire('destroy');
 			return self;
 		}
+		
+		self.disable = function () {
+			inputhandler.disableTouch();
+		}
+		
+		self.enable = function () {
+			inputhandler.enableTouch();
+		}
 
 		function setPos (x) {
 			xPos = x;
@@ -412,7 +446,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 				dispatcher.fire('move', newX);
 			}
 
-			function onEnd (e, point) {
+			function onEnd (point) {
 				inputhandler.off('move');
 				inputhandler.off('end');
 				inputhandler.on('transitionEnd', onTransitionEnd);

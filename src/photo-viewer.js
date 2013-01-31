@@ -1,9 +1,8 @@
 var PhotoViewer = (function (Zepto, jQuery, App) {
-	function Zoomable(viewport, element) {
+	function Zoomable(slideviewer, title, viewport, element) {
 		var zoomed = false;
 		var x = 0;
 		var y = 0;
-		var z = 0;
 		var startDist;
 		function dist(p1, p2) {
 			p1 = p1.x ? p1 : p1.lastPoint;
@@ -12,12 +11,34 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		}
 		var zoom = 1;
 		var scale = 1;
-		Touchy(viewport, {
-			one: function (hand, finger) {
+		function setTransform() {
+			var transform = 'translate3d(' + x + 'px,' + y + 'px,0px) scale(' + scale + ',' + scale + ') ';
+			element.style.webkitTransform = transform;
+			title.innerHTML = transform;
+		}
+		function dur(t) {
+			element.style.webkitTransitionDuration = t + 's';
+		}
+		Touchy(viewport, true, {
+		one: function (hand, finger) {
 				console.log(hand, finger);
-				if (!zoomed) return;
+				if (zoom <= 1) return;
+				slideviewer.disable();
+				var prevX = finger.lastPoint.x;
+				var prevY = finger.lastPoint.y;
+				finger.on('move', function (point) {
+					var dx = point.x - prevX;
+					var dy = point.y - prevY;
+					x = round(x + dx, 2);
+					y = round(y + dy, 2);
+					prevX = point.x;
+					prevY = point.y;
+					dur(0);
+					setTransform();
+				});
 			},
 			two: function (hand, finger1, finger2) {
+				slideviewer.disable();
 				console.log(hand, finger1, finger2);
 				startDist = dist(finger1, finger2);
 				hand.on('move', function (points) {
@@ -26,14 +47,26 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					var ratio = newDist / startDist;
 					scale = round(ratio * zoom, 2);
 					console.log(startDist, newDist, ratio, scale);
-					element.style.webkitTransform = 'scale('+scale+','+scale+')';
+					dur(0);
+					setTransform();
 				});
 				hand.on('end', function () {
 					zoom = scale;
+					if (zoom <= 1) {
+						slideviewer.enable();
+					}
+					if (zoom < 1) {
+						zoom = 1;
+						scale = 1;
+						x = 0;
+						y = 0;
+						dur(1);
+						setTransform();
+					}
 				});
 			},
-		}).stopWindowBounce();
-		console.log(viewport, element);
+		});
+		Touchy.stopWindowBounce();
 	}
 	var loaderImg = [
 		"data:image/gif;base64,",
@@ -318,10 +351,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					wrap.innerHTML = '';
 					centerImage(img);
 					wrap.appendChild(img);
-					new Zoomable(wrap, img);
+					new Zoomable(slideviewer, title, wrap, img);
 				}
 				return wrap;
 			});
+// 			slideviewer.disable();
 		}
 	}
 }(window.Zepto, window.jQuery, App));
