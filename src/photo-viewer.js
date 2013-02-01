@@ -36,18 +36,18 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			element.style.webkitTransitionDuration = round(t, 2) + 'ms';
 		}
 		function viewHalfX() {
-			return viewport.offsetWidth / (2 * scale);
+			return viewport.offsetWidth / 2;
 		}
 		function viewHalfY() {
-			return viewport.offsetHeight / (2 * scale);
+			return viewport.offsetHeight / 2;
 		}
 		function findMaxX() {
-			var maxX = element.offsetWidth / 2 - viewHalfX();
+			var maxX = element.offsetWidth / 2 - viewHalfX() / scale;
 			if (maxX < 0) return 0;
 			else return maxX;
 		}
 		function findMaxY() {
-			var maxY = element.offsetHeight / 2 - viewHalfY();
+			var maxY = element.offsetHeight / 2 - viewHalfY() / scale;
 			if (maxY < 0) return 0;
 			else return maxY;
 		}
@@ -64,110 +64,113 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var prevTouchEnd = 0;
 		Touchy(viewport, {
 		one: function (hand, finger) {
-				console.log(hand, finger);
-			   
-				var prevX = finger.lastPoint.x;
-				var prevY = finger.lastPoint.y;
-				
-				finger.on('move', function (point) {
-					prevTouchEnd = 0;
-					if (scale <= 1) return;
-					x += (point.x - prevX) / scale;
-					y += (point.y - prevY) / scale;
-					
-					maxX = findMaxX();
-					maxY = findMaxY();
-					
-					if (Math.abs(x) < maxX && Math.abs(y) < maxY) {
-						slideviewer.disable();
-					} else {
-						slideviewer.enable();
-					}
-					
-					prevX = point.x;
-					prevY = point.y;
-					dur(0);
-					setTransform();
-				});
-				
-				finger.on('end', function (point) {
-					var t = Date.now();
-					var diff = t - prevTouchEnd;
-					if (diff < 200) {
-						if (scale <= 1) {
-							x = -(finger.lastPoint.x - viewHalfX());
-							y = -(finger.lastPoint.y - viewHalfY());
-							scale = 2;
-							boundXandY();
-							dur(500);
-							setTransform();
-						} else {
-							scale = 1;
-							x = 0;
-							y = 0;
-							dur(500);
-							setTransform();
-						}
-						prevTouchEnd = 0;
-						return;
-					}
-					prevTouchEnd = t;
-					
-					boundXandY();
-					dur(500);
-					setTransform();
-				});
-			},
-			two: function (hand, finger1, finger2) {
+			console.log(hand, finger);
+			
+			var prevX = finger.lastPoint.x;
+			var prevY = finger.lastPoint.y;
+			
+			finger.on('move', function (point) {
 				prevTouchEnd = 0;
-				slideviewer.disable();
+				if (scale <= 1) return;
+				x += (point.x - prevX) / scale;
+				y += (point.y - prevY) / scale;
 				
-				console.log(hand, finger1, finger2);
-				var prevDist = dist(finger1, finger2);
-				var prevC = center(finger1.lastPoint, finger2.lastPoint);
+				maxX = findMaxX();
+				maxY = findMaxY();
 				
-				hand.on('move', function (points) {
-					console.log(points);
-					var newDist = dist(points[0], points[1]);
-					var c = center(points[0], points[1]);
-					var ratio = newDist / prevDist;
-					
-					var w = viewport.offsetWidth;
-					var h = viewport.offsetHeight;
-					
-					var diffX = (c.x - w/2) / prevDist;
-					var diffY = (c.y - h/2) / prevDist;
-					
-					x = (x - diffX);
-					y = (y - diffY);
-					
-					scale *= ratio;
-					prevDist = newDist;
-					prevC = c;
-					dur(0);
-					setTransform();
-				});
+				if (Math.abs(x) < maxX && Math.abs(y) < maxY) {
+					slideviewer.disable();
+				} else {
+					slideviewer.enable();
+				}
 				
-				hand.on('end', function () {
-					var minZoom = 1;
-					var maxZoom = 4;
+				prevX = point.x;
+				prevY = point.y;
+				dur(0);
+				setTransform();
+			});
+				
+			finger.on('end', function (point) {
+				var t = Date.now();
+				var diff = t - prevTouchEnd;
+				if (diff < 200) {
 					if (scale <= 1) {
-						slideviewer.enable();
-					}
-					if (scale < minZoom) {
-						scale = minZoom;
+						x = -(finger.lastPoint.x - viewHalfX());
+						y = -(finger.lastPoint.y - viewHalfY());
+						scale = 2;
+						boundXandY();
+						dur(500);
+						setTransform();
+					} else {
+						scale = 1;
 						x = 0;
 						y = 0;
 						dur(500);
 						setTransform();
 					}
-					if (scale > maxZoom) {
-						scale = maxZoom;
-						dur(500);
-						setTransform();
-					}
-				});
-			},
+					prevTouchEnd = 0;
+					return;
+				}
+				prevTouchEnd = t;
+				
+				boundXandY();
+				dur(500);
+				setTransform();
+			});
+		},
+		two: function (hand, finger1, finger2) {
+			prevTouchEnd = 0;
+			slideviewer.disable();
+			
+			console.log(hand, finger1, finger2);
+			var prevDist = dist(finger1, finger2);
+			var prevC = center(finger1.lastPoint, finger2.lastPoint);
+			// Translate to image coordinates
+// 				prevC.x = x + (prevC.x - viewHalfX())*scale;
+// 				prevC.y = y + (prevC.y - viewHalfY())*scale;
+			
+			hand.on('move', function (points) {
+				console.log(points);
+				var newDist = dist(points[0], points[1]);
+				var c = center(points[0], points[1]);
+				var ratio = newDist / prevDist;
+				
+				var w = viewport.offsetWidth;
+				var h = viewport.offsetHeight;
+				
+				var diffX = (c.x - w/2) / prevDist;
+				var diffY = (c.y - h/2) / prevDist;
+				
+				x = (x - diffX);
+				y = (y - diffY);
+				
+				scale *= ratio;
+				prevDist = newDist;
+				prevC = c;
+				dur(0);
+				setTransform();
+			});
+			
+			hand.on('end', function () {
+				var minZoom = 1;
+				var maxZoom = 4;
+				if (scale <= 1) {
+					slideviewer.enable();
+				}
+				if (scale < minZoom) {
+					scale = minZoom;
+					x = 0;
+					y = 0;
+					dur(500);
+					setTransform();
+				}
+				if (scale > maxZoom) {
+					scale = maxZoom;
+					dur(500);
+					setTransform();
+				}
+			});
+		},
 		});
 		Touchy.stopWindowBounce();
 	}
@@ -451,14 +454,10 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				img.style.margin = '0 auto';
 				img.style.display = 'block';
 				img.onload = function () {
-					// naturalHeight might not be initialized
-					// yet if I don't wait a bit.
-					setTimeout(function () {
-						wrap.innerHTML = '';
-						centerImage(img);
-						wrap.appendChild(img);
-						new Zoomable(slideviewer, title, wrap, img);
-					}, 10);
+					wrap.innerHTML = '';
+					centerImage(img);
+					wrap.appendChild(img);
+					new Zoomable(slideviewer, title, wrap, img);
 				}
 				return wrap;
 			});
