@@ -131,10 +131,18 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					var newDist = dist(points[0], points[1]);
 					var c = center(points[0], points[1]);
 					var ratio = newDist / prevDist;
-					prevDist = newDist;
+					
+					var w = viewport.offsetWidth;
+					var h = viewport.offsetHeight;
+					
+					var diffX = (c.x - w/2) / prevDist;
+					var diffY = (c.y - h/2) / prevDist;
+					
+					x = (x - diffX);
+					y = (y - diffY);
+					
 					scale *= ratio;
-					x += (c.x - prevC.x) / scale * ratio;
-					y += (c.y - prevC.y) / scale * ratio;
+					prevDist = newDist;
 					prevC = c;
 					dur(0);
 					setTransform();
