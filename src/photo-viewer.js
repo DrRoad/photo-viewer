@@ -33,7 +33,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			title.innerHTML = '<small style="font-size: 11px">' + transform + '</small>';
 		}
 		function dur(t) {
-			element.style.webkitTransitionDuration = round(t, 2) + 's';
+			element.style.webkitTransitionDuration = round(t, 2) + 'ms';
 		}
 		function viewHalfX() {
 			return viewport.offsetWidth / (2 * scale);
@@ -93,19 +93,19 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				finger.on('end', function (point) {
 					var t = Date.now();
 					var diff = t - prevTouchEnd;
-					if (diff > 25 && diff < 300) {
+					if (diff < 200) {
 						if (scale <= 1) {
 							x = -(finger.lastPoint.x - viewHalfX());
 							y = -(finger.lastPoint.y - viewHalfY());
 							scale = 2;
 							boundXandY();
-							dur(1);
+							dur(500);
 							setTransform();
 						} else {
 							scale = 1;
 							x = 0;
 							y = 0;
-							dur(1);
+							dur(500);
 							setTransform();
 						}
 						prevTouchEnd = 0;
@@ -114,7 +114,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					prevTouchEnd = t;
 					
 					boundXandY();
-					dur(1);
+					dur(500);
 					setTransform();
 				});
 			},
@@ -158,12 +158,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 						scale = minZoom;
 						x = 0;
 						y = 0;
-						dur(1);
+						dur(500);
 						setTransform();
 					}
 					if (scale > maxZoom) {
 						scale = maxZoom;
-						dur(1);
+						dur(500);
 						setTransform();
 					}
 				});
@@ -302,11 +302,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var appShown = false;
 		function afterAppShow() {
 			if (App.platform == 'ios') {
-				topbar.style.transition = 'opacity 0.5s ease-in-out';
-				topbar.style.webkitTransition = 'opacity 0.5s ease-in-out';
+				topbar.style.transition = 'opacity 0.5s ease-in-out 200ms';
+				topbar.style.webkitTransition = 'opacity 0.5s ease-in-out 200ms';
 			} else {
-				topbar.style.transition = 'transform 0.5s ease-in-out';
-				topbar.style.webkitTransition = '-webkit-transform 0.5s ease-in-out';
+				topbar.style.transition = 'transform 0.5s ease-in-out 200ms';
+				topbar.style.webkitTransition = '-webkit-transform 0.5s ease-in-out 200ms';
 			}
 			topbarCover.addEventListener("touchstart", showTitleBar, false);
 
