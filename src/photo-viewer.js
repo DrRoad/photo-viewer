@@ -8,6 +8,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			p2 = p2.x ? p2 : p2.lastPoint;
 			return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 		}
+		function center(p1, p2) {
+			return {
+				x: (p1.x + p2.x) / 2,
+				y: (p1.y + p2.y) / 2,
+			};
+		}
 		function abs(n) {
 			return Math.abs(n);
 		}
@@ -56,7 +62,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			}
 		}
 		var prevTouchEnd = 0;
-		Touchy(viewport, true, {
+		Touchy(viewport, {
 		one: function (hand, finger) {
 				console.log(hand, finger);
 			   
@@ -86,7 +92,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				
 				finger.on('end', function (point) {
 					var t = Date.now();
-					if (t - prevTouchEnd < 300) {
+					var diff = t - prevTouchEnd;
+					if (diff > 25 && diff < 300) {
 						if (scale <= 1) {
 							x = -(finger.lastPoint.x - viewHalfX());
 							y = -(finger.lastPoint.y - viewHalfY());
@@ -116,14 +123,19 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				slideviewer.disable();
 				
 				console.log(hand, finger1, finger2);
-				prevDist = dist(finger1, finger2);
+				var prevDist = dist(finger1, finger2);
+				var prevC = center(finger1.lastPoint, finger2.lastPoint);
 				
 				hand.on('move', function (points) {
 					console.log(points);
 					var newDist = dist(points[0], points[1]);
+					var c = center(points[0], points[1]);
 					var ratio = newDist / prevDist;
 					prevDist = newDist;
 					scale *= ratio;
+					x += (c.x - prevC.x) / scale * ratio;
+					y += (c.y - prevC.y) / scale * ratio;
+					prevC = c;
 					dur(0);
 					setTransform();
 				});
