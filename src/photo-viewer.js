@@ -1,4 +1,27 @@
 var PhotoViewer = (function (Zepto, jQuery, App) {
+	function TranformStacker(elm) {
+		var self = this;
+		var cs = {
+			x: 0,
+			y: 0,
+			scale: 1,
+		};
+		self.addTransform = function (func, time) {
+			if (time == 0) {
+				func.applyTo(cs);
+			}
+		}
+		// t: Time, [0...d]
+		// b: Start value
+		// c: Change in value
+		// d: Total duration
+		function easeInOutCubic(t, b, c, d) {
+			t /= d/2;
+			if (t < 1) return c/2*t*t*t + b;
+			t -= 2;
+			return c/2*(t*t*t + 2) + b;
+		};
+	}
 	function Zoomable(slideviewer, title, viewport, element) {
 		var x = 0;
 		var y = 0;
@@ -17,20 +40,25 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		function abs(n) {
 			return Math.abs(n);
 		}
-		// t: Time, [0...d]
-		// b: Start value
-		// c: Change in value
-		// d: Total duration
-		function easeInOutCubic(t, b, c, d) {
-			t /= d/2;
-			if (t < 1) return c/2*t*t*t + b;
-			t -= 2;
-			return c/2*(t*t*t + 2) + b;
-		};
+		function roundObj(o) {
+			var newO = {};
+			for (k in o) {
+				if (typeof o[k] == 'number') {
+					newO[k] = round(o[k], 2);
+				} else {
+					newO[k] = o[k];
+				}
+			}
+			return JSON.stringify(newO) + ' ';
+			
+		}
+		function titles(s) {
+			title.innerHTML = '<small style="font-size: 11px">' + s + '</small>';
+		}
 		function setTransform() {
 			var transform = 'translate3d(' + round(x * scale, 2) + 'px,' + round(y * scale, 2) + 'px,0px) scale(' + round(scale, 2) + ',' + round(scale, 2) + ') ';
 			element.style.webkitTransform = transform;
-			title.innerHTML = '<small style="font-size: 11px">' + transform + '</small>';
+// 			titles(transform);
 		}
 		function dur(t) {
 			element.style.webkitTransitionDuration = round(t, 2) + 'ms';
@@ -59,6 +87,18 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			var maxY = findMaxY();
 			if (Math.abs(y) > maxY) {
 				y = y > 0 ? maxY : -maxY;
+			}
+		}
+		function diff(sc) {
+			return {
+				x: (-sc.x + viewHalfX()) / scale,
+				y: (-sc.y + viewHalfY()) / scale,
+			};
+		}
+		function sc2ic(sc) {
+			return {
+				x: x + (-sc.x + viewHalfX()) / scale,
+				y: y + (-sc.y + viewHalfY()) / scale,
 			}
 		}
 		var prevTouchEnd = 0;
@@ -123,30 +163,28 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			slideviewer.disable();
 			
 			console.log(hand, finger1, finger2);
-			var prevDist = dist(finger1, finger2);
-			var prevC = center(finger1.lastPoint, finger2.lastPoint);
-			// Translate to image coordinates
-// 				prevC.x = x + (prevC.x - viewHalfX())*scale;
-// 				prevC.y = y + (prevC.y - viewHalfY())*scale;
+			
+			var p1 = finger1.lastPoint;
+			var p2 = finger2.lastPoint;
+			
+			var prevDist = dist(p1, p2);
+			
+			var ic = sc2ic(center(p1, p2));
 			
 			hand.on('move', function (points) {
 				console.log(points);
 				var newDist = dist(points[0], points[1]);
-				var c = center(points[0], points[1]);
+				var newSC = center(points[0], points[1]);
+				
 				var ratio = newDist / prevDist;
-				
-				var w = viewport.offsetWidth;
-				var h = viewport.offsetHeight;
-				
-				var diffX = (c.x - w/2) / prevDist;
-				var diffY = (c.y - h/2) / prevDist;
-				
-				x = (x - diffX);
-				y = (y - diffY);
-				
-				scale *= ratio;
 				prevDist = newDist;
-				prevC = c;
+				scale *= ratio;
+				var newDiff = diff(newSC);
+				titles(roundObj(newDiff));
+				
+				x = (ic.x - newDiff.x);
+				y = (ic.y - newDiff.y);
+				
 				dur(0);
 				setTransform();
 			});

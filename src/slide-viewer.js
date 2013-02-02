@@ -246,6 +246,8 @@ var SlideViewer = (function (Zepto, jQuery) {
 				s.height = '100%';
 				s.width = '100%';
 				s.left = i * 100 + '%';
+// 				s.overflowX = 'hidden';
+// 				s.overflowY = 'visible';
 
 				page.dataset = {};
 
