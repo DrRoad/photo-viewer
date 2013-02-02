@@ -89,55 +89,65 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				y = y > 0 ? maxY : -maxY;
 			}
 		}
-		function diff(sc) {
+		// Computes a vector from the given screen
+		// coordinates to the center of the screen,
+		// and scales the vector to image coordinate
+		// space.
+		function vecToCenterIC(sc) {
 			return {
-				x: (-sc.x + viewHalfX()) / scale,
-				y: (-sc.y + viewHalfY()) / scale,
+				x: (viewHalfX() - sc.x) / scale,
+				y: (viewHalfY() - sc.y) / scale,
 			};
 		}
+		// Converts an abitrary point in screen
+		// coordinates to the corresponding point
+		// in image coordinates, given the transforms
+		// and scaling currently in place.
 		function sc2ic(sc) {
+			var vec = vecToCenterIC(sc);
 			return {
-				x: x + (-sc.x + viewHalfX()) / scale,
-				y: y + (-sc.y + viewHalfY()) / scale,
+				x: x + vec.x,
+				y: y + vec.y,
 			}
 		}
 		var prevTouchEnd = 0;
 		Touchy(viewport, {
 		one: function (hand, finger) {
-			console.log(hand, finger);
-			
 			var prevX = finger.lastPoint.x;
 			var prevY = finger.lastPoint.y;
 			
 			finger.on('move', function (point) {
 				prevTouchEnd = 0;
 				if (scale <= 1) return;
-				x += (point.x - prevX) / scale;
-				y += (point.y - prevY) / scale;
 				
 				maxX = findMaxX();
 				maxY = findMaxY();
 				
-				if (Math.abs(x) < maxX && Math.abs(y) < maxY) {
+				if (Math.abs(x) < maxX) {
 					slideviewer.disable();
 				} else {
 					slideviewer.enable();
 				}
+				
+				
+				x += (point.x - prevX) / scale;
+				y += (point.y - prevY) / scale;
 				
 				prevX = point.x;
 				prevY = point.y;
 				dur(0);
 				setTransform();
 			});
-				
+			
 			finger.on('end', function (point) {
 				var t = Date.now();
 				var diff = t - prevTouchEnd;
 				if (diff < 200) {
 					if (scale <= 1) {
-						x = -(finger.lastPoint.x - viewHalfX());
-						y = -(finger.lastPoint.y - viewHalfY());
 						scale = 2;
+						var ic = sc2ic(finger.lastPoint);
+						x = ic.x;
+						y = ic.y;
 						boundXandY();
 						dur(500);
 						setTransform();
@@ -162,28 +172,23 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			prevTouchEnd = 0;
 			slideviewer.disable();
 			
-			console.log(hand, finger1, finger2);
-			
 			var p1 = finger1.lastPoint;
 			var p2 = finger2.lastPoint;
 			
 			var prevDist = dist(p1, p2);
-			
 			var ic = sc2ic(center(p1, p2));
 			
 			hand.on('move', function (points) {
-				console.log(points);
 				var newDist = dist(points[0], points[1]);
 				var newSC = center(points[0], points[1]);
 				
 				var ratio = newDist / prevDist;
 				prevDist = newDist;
 				scale *= ratio;
-				var newDiff = diff(newSC);
-				titles(roundObj(newDiff));
 				
-				x = (ic.x - newDiff.x);
-				y = (ic.y - newDiff.y);
+				var vec = vecToCenterIC(newSC);
+				x = ic.x - vec.x;
+				y = ic.y - vec.y;
 				
 				dur(0);
 				setTransform();
