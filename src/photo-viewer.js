@@ -50,7 +50,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				}
 			}
 			return JSON.stringify(newO) + ' ';
-			
+
 		}
 		function titles(s) {
 			title.innerHTML = '<small style="font-size: 11px">' + s + '</small>';
@@ -89,24 +89,25 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				y = y > 0 ? maxY : -maxY;
 			}
 		}
-		// Computes a vector from the given screen
-		// coordinates to the center of the screen,
-		// in screen coordinate space.
-		function vecToCenter(sc) {
-			return {
-				x: viewHalfX() - sc.x,
-				y: viewHalfY() - sc.y,
-			};
-		}
 		// Converts an abitrary point in screen
 		// coordinates to the corresponding point
 		// in image coordinates, given the transforms
 		// and scaling currently in place.
+		//
+		//    screen coordinates        image coordinates
+		//      +--------(+viewW)            (+maxY)
+		//      |                               |
+		//      |                   (+maxX)-----+------(-maxX)
+		//      |                               |
+		//    (+viewH)                       (-maxY)
+		//
+		// Notice X and Y are flipped, and the origin
+		// has moved from the top-left corner to the
+		// center.
 		function sc2ic(sc) {
-			var vec = vecToCenter(sc);
 			return {
-				x: x + vec.x / scale,
-				y: y + vec.y / scale,
+				x: x + (viewHalfX() - sc.x) / scale,
+				y: y + (viewHalfY() - sc.y) / scale,
 			}
 		}
 		var prevTouchEnd = 0;
@@ -114,30 +115,30 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		one: function (hand, finger) {
 			var prevX = finger.lastPoint.x;
 			var prevY = finger.lastPoint.y;
-			
+
 			finger.on('move', function (point) {
 				prevTouchEnd = 0;
 				if (scale <= 1) return;
-				
+
 				maxX = findMaxX();
 				maxY = findMaxY();
-				
+
 				if (Math.abs(x) < maxX) {
 					slideviewer.disable();
 				} else {
 					slideviewer.enable();
 				}
-				
-				
+
+
 				x += (point.x - prevX) / scale;
 				y += (point.y - prevY) / scale;
-				
+
 				prevX = point.x;
 				prevY = point.y;
 				dur(0);
 				setTransform();
 			});
-			
+
 			finger.on('end', function (point) {
 				var t = Date.now();
 				var diff = t - prevTouchEnd;
@@ -161,7 +162,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					return;
 				}
 				prevTouchEnd = t;
-				
+
 				boundXandY();
 				dur(500);
 				setTransform();
@@ -170,34 +171,35 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		two: function (hand, finger1, finger2) {
 			prevTouchEnd = 0;
 			slideviewer.disable();
-			
+
 			var p1 = finger1.lastPoint;
 			var p2 = finger2.lastPoint;
-			
+
 			var prevDist = dist(p1, p2);
-			// Find the center of the current touch in
-			// image coordinates.
-			var ic = sc2ic(center(p1, p2));
-			
+			var startCenter = sc2ic(center(p1, p2));
+
 			hand.on('move', function (points) {
 				var p1 = points[0];
 				var p2 = points[1];
-				
+
 				var newDist = dist(p1, p2);
 				scale *= newDist / prevDist;
 				prevDist = newDist;
-				
-				// We try and preserve the center of the
-				// touch
-				var touchCenter = center(p1, p2);
-				var offset = vecToCenter(touchCenter);
-				x = ic.x - offset.x / scale;
-				y = ic.y - offset.y / scale;
-				
+
+				// We try and keep the same center, in
+				// image coordinates, for the pinch
+				// as the user had when they started.
+				// This allows two finger panning, and a
+				// pleasent "zooms to your fingers"
+				// feeling.
+				var newCenter = sc2ic(center(p1, p2));
+				x += ic.x - newCenter.x;
+				y += ic.y - newCenter.y;
+
 				dur(0);
 				setTransform();
 			});
-			
+
 			hand.on('end', function () {
 				var minZoom = 1;
 				var maxZoom = 4;
