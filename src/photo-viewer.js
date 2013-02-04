@@ -91,12 +91,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		}
 		// Computes a vector from the given screen
 		// coordinates to the center of the screen,
-		// and scales the vector to image coordinate
-		// space.
-		function vecToCenterIC(sc) {
+		// in screen coordinate space.
+		function vecToCenter(sc) {
 			return {
-				x: (viewHalfX() - sc.x) / scale,
-				y: (viewHalfY() - sc.y) / scale,
+				x: viewHalfX() - sc.x,
+				y: viewHalfY() - sc.y,
 			};
 		}
 		// Converts an abitrary point in screen
@@ -104,10 +103,10 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		// in image coordinates, given the transforms
 		// and scaling currently in place.
 		function sc2ic(sc) {
-			var vec = vecToCenterIC(sc);
+			var vec = vecToCenter(sc);
 			return {
-				x: x + vec.x,
-				y: y + vec.y,
+				x: x + vec.x / scale,
+				y: y + vec.y / scale,
 			}
 		}
 		var prevTouchEnd = 0;
@@ -176,19 +175,24 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			var p2 = finger2.lastPoint;
 			
 			var prevDist = dist(p1, p2);
+			// Find the center of the current touch in
+			// image coordinates.
 			var ic = sc2ic(center(p1, p2));
 			
 			hand.on('move', function (points) {
-				var newDist = dist(points[0], points[1]);
-				var newSC = center(points[0], points[1]);
+				var p1 = points[0];
+				var p2 = points[1];
 				
-				var ratio = newDist / prevDist;
+				var newDist = dist(p1, p2);
+				scale *= newDist / prevDist;
 				prevDist = newDist;
-				scale *= ratio;
 				
-				var vec = vecToCenterIC(newSC);
-				x = ic.x - vec.x;
-				y = ic.y - vec.y;
+				// We try and preserve the center of the
+				// touch
+				var touchCenter = center(p1, p2);
+				var offset = vecToCenter(touchCenter);
+				x = ic.x - offset.x / scale;
+				y = ic.y - offset.y / scale;
 				
 				dur(0);
 				setTransform();
