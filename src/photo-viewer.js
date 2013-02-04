@@ -193,8 +193,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				// pleasent "zooms to your fingers"
 				// feeling.
 				var newCenter = sc2ic(center(p1, p2));
-				x += ic.x - newCenter.x;
-				y += ic.y - newCenter.y;
+				x += startCenter.x - newCenter.x;
+				y += startCenter.y - newCenter.y;
 
 				dur(0);
 				setTransform();
