@@ -182,6 +182,8 @@ var SlideViewer = (function (Zepto, jQuery) {
 			touchDisabled = true;
 		}
 
+		// Simulates a touchstart if a touch is currently
+		// in progress.
 		self.enableTouch = function () {
 			console.log("enabling touch", touchDisabled);
 			if (lastTouch) {

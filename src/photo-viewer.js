@@ -110,7 +110,20 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				y: y + (viewHalfY() - sc.y) / scale,
 			}
 		}
+		slideviewer.on('flip', function (page) {
+			disableZoom = false;
+			if (page !== prevPage) {
+				x = 0;
+				y = 0;
+				scale = 1;
+				dur(500);
+				setTransform();
+			}
+			prevPage = page;
+		});
+		var prevPage = -1;
 		var prevTouchEnd = 0;
+		var disableZoom = false;
 		Touchy(viewport, {
 		one: function (hand, finger) {
 			var prevX = finger.lastPoint.x;
@@ -124,7 +137,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 			finger.on('move', function (point) {
 				prevTouchEnd = 0;
-				if (scale <= 1) return;
 
 				var dx = (point.x - prevX) / scale;
 				var dy = (point.y - prevY) / scale;
@@ -135,9 +147,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				prevY = point.y;
 
 				var maxX = findMaxX();
-				if (Math.abs(x) < maxX) {
+				if (Math.abs(x) <= maxX) {
 					slideviewer.disable();
-				} else if (Math.abs(startX) >= maxX) {
+					disableZoom = false;
+				} else if (Math.abs(x) > maxX) {
+					disableZoom = true;
 					return;
 				}
 
@@ -148,7 +162,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			finger.on('end', function (point) {
 				var t = Date.now();
 				var diff = t - prevTouchEnd;
-				if (diff < 200) {
+				if (diff < 200 && !disableZoom) {
 					if (scale <= 1) {
 						scale = 2;
 						var ic = sc2ic(finger.lastPoint);
@@ -176,6 +190,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		},
 		two: function (hand, finger1, finger2) {
 			prevTouchEnd = 0;
+			if (disableZoom) return;
 			slideviewer.disable();
 
 			var p1 = finger1.lastPoint;
