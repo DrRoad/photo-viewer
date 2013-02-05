@@ -399,6 +399,10 @@ var SlideViewer = (function (Zepto, jQuery) {
 			inputhandler.enableTouch();
 		}
 
+		self.isDirectionLocked = function () {
+			return directionLocked;
+		}
+
 		function setPos (x) {
 			xPos = x;
 			// translateZ(0) does not affect our appearance, but hints to the
@@ -408,6 +412,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			slider.style[transform] = 'translateX(' + x + 'px) translateZ(0)';
 		}
 
+		var directionLocked = false;
 		function onStart (point) {
 			inputhandler.off('start');
 			inputhandler.on('end', onEndNoMove);
@@ -416,8 +421,8 @@ var SlideViewer = (function (Zepto, jQuery) {
 			var startY = point.pageY;
 			var prevX = startX;
 			var prevY = startY;
-			var directionLocked = false;
 			var startedMoving = false;
+			directionLocked = false;
 
 			slider.style[transitionDuration] = '0s';
 			inputhandler.on('move', onMove);
@@ -437,7 +442,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 				startedMoving = true;
 
 				// We are scrolling vertically, so skip SlideViewer and give the control back to the browser
-				if (absY > absX && !directionLocked) {
+				if (absY > absX/2 && !directionLocked) {
 					inputhandler.off('move');
 					inputhandler.off('end');
 					inputhandler.on('start', onStart);

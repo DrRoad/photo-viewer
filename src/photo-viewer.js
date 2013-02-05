@@ -26,6 +26,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var x = 0;
 		var y = 0;
 		var scale = 1;
+		setTransform();
 		function dist(p1, p2) {
 			p1 = p1.x ? p1 : p1.lastPoint;
 			p2 = p2.x ? p2 : p2.lastPoint;
@@ -70,12 +71,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			return viewport.offsetHeight / 2;
 		}
 		function findMaxX() {
-			var maxX = element.offsetWidth / 2 - viewHalfX() / scale;
+			var maxX = element.offsetWidth / 2 - viewHalfX() / scale + 2;
 			if (maxX < 0) return 0;
 			else return maxX;
 		}
 		function findMaxY() {
-			var maxY = element.offsetHeight / 2 - viewHalfY() / scale;
+			var maxY = element.offsetHeight / 2 - viewHalfY() / scale + 2;
 			if (maxY < 0) return 0;
 			else return maxY;
 		}
@@ -110,20 +111,18 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				y: y + (viewHalfY() - sc.y) / scale,
 			}
 		}
-		slideviewer.on('flip', function (page) {
-			disableZoom = false;
-			if (page !== prevPage) {
-				x = 0;
-				y = 0;
-				scale = 1;
-				dur(500);
-				setTransform();
-			}
-			prevPage = page;
-		});
-		var prevPage = -1;
+// 		slideviewer.on('flip', function (page) {
+// 			if (page === prevPage) return;
+//
+// 			prevPage = page;
+// 			x = 0;
+// 			y = 0;
+// 			scale = 1;
+// 			dur(500);
+// 			setTransform();
+// 		});
+// 		var prevPage = -1;
 		var prevTouchEnd = 0;
-		var disableZoom = false;
 		Touchy(viewport, {
 		one: function (hand, finger) {
 			var prevX = finger.lastPoint.x;
@@ -134,9 +133,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			if (Math.abs(startX) >= maxX) {
 				slideviewer.enable();
 			}
+			boundXandY();
 
 			finger.on('move', function (point) {
 				prevTouchEnd = 0;
+				if (scale <= 1) return;
 
 				var dx = (point.x - prevX) / scale;
 				var dy = (point.y - prevY) / scale;
@@ -149,9 +150,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				var maxX = findMaxX();
 				if (Math.abs(x) <= maxX) {
 					slideviewer.disable();
-					disableZoom = false;
-				} else if (Math.abs(x) > maxX) {
-					disableZoom = true;
+				} else if (slideviewer.isDirectionLocked()) {
 					return;
 				}
 
@@ -160,9 +159,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			});
 
 			finger.on('end', function (point) {
+				if (slideviewer.isDirectionLocked()) return;
+
 				var t = Date.now();
 				var diff = t - prevTouchEnd;
-				if (diff < 200 && !disableZoom) {
+				if (diff < 200) {
 					if (scale <= 1) {
 						scale = 2;
 						var ic = sc2ic(finger.lastPoint);
@@ -190,7 +191,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		},
 		two: function (hand, finger1, finger2) {
 			prevTouchEnd = 0;
-			if (disableZoom) return;
+			if (slideviewer.isDirectionLocked()) return;
 			slideviewer.disable();
 
 			var p1 = finger1.lastPoint;
@@ -239,6 +240,9 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					dur(500);
 					setTransform();
 				}
+				boundXandY();
+				dur(500);
+				setTransform();
 			});
 		},
 		});
