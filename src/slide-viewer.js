@@ -84,7 +84,6 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 			return transitionEnd[vendor];
 		})();
-		var touchID = '';
 		var lastTouch;
 		var touchDisabled = false;
 
@@ -102,18 +101,21 @@ var SlideViewer = (function (Zepto, jQuery) {
 			} else if (t == transitionEndEvent) {
 				dispatcher.fire('transitionEnd', e);
 			}
-			
+
 			if (touchDisabled) {
-				return;
-			}
-			
-			if (t == startEvent) {
-				if (hasTouch) {
-					if (touchID !== '') return;
-					touchID = e.changedTouches[0].identifier;
+				if (hasTouch && t == startEvent) {
 					lastTouch = e.changedTouches[0];
 				}
-				dispatcher.fire('start', e, hasTouch ? e.changedTouches[0] : e);
+				return;
+			}
+
+			var touchID = lastTouch ? lastTouch.identifier : '';
+			if (t == startEvent) {
+				if (hasTouch) {
+					if (lastTouch) return;
+					lastTouch = e.changedTouches[0];
+				}
+				dispatcher.fire('start', hasTouch ? e.changedTouches[0] : e);
 			} else if (t == moveEvent) {
 				if (!hasTouch) {
 					dispatcher.fire('move', e, e);
@@ -128,13 +130,14 @@ var SlideViewer = (function (Zepto, jQuery) {
 					dispatcher.fire('end', e);
 					return;
 				}
-				if (touchID === '') return;
+
+				if (!lastTouch) return;
 
 				var touch = findTouch(e.changedTouches, touchID);
 				if (!touch) touch = findTouch(e.touches, touchID);
-				lastTouch = null;
+
 				dispatcher.fire('end', touch);
-				touchID = '';
+				lastTouch = null;
 			}
 		}
 
@@ -166,7 +169,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			slider.removeEventListener(transitionEndEvent, handleEvent, false);
 			return self;
 		}
-		
+
 		// If a touch is currently happening, simulates
 		// touchcancel. Prevents further touch events from
 		// being processed.
@@ -178,9 +181,12 @@ var SlideViewer = (function (Zepto, jQuery) {
 			}
 			touchDisabled = true;
 		}
-		
+
 		self.enableTouch = function () {
 			console.log("enabling touch", touchDisabled);
+			if (lastTouch) {
+				dispatcher.fire('start', lastTouch);
+			}
 			touchDisabled = false;
 		}
 	}
@@ -382,11 +388,11 @@ var SlideViewer = (function (Zepto, jQuery) {
 			dispatcher.fire('destroy');
 			return self;
 		}
-		
+
 		self.disable = function () {
 			inputhandler.disableTouch();
 		}
-		
+
 		self.enable = function () {
 			inputhandler.enableTouch();
 		}
@@ -400,7 +406,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			slider.style[transform] = 'translateX(' + x + 'px) translateZ(0)';
 		}
 
-		function onStart (e, point) {
+		function onStart (point) {
 			inputhandler.off('start');
 			inputhandler.on('end', onEndNoMove);
 

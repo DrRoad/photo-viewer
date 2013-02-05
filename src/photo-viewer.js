@@ -116,25 +116,31 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			var prevX = finger.lastPoint.x;
 			var prevY = finger.lastPoint.y;
 
+			var maxX = findMaxX();
+			var startX = x;
+			if (Math.abs(startX) >= maxX) {
+				slideviewer.enable();
+			}
+
 			finger.on('move', function (point) {
 				prevTouchEnd = 0;
 				if (scale <= 1) return;
 
-				maxX = findMaxX();
-				maxY = findMaxY();
-
-				if (Math.abs(x) < maxX) {
-					slideviewer.disable();
-				} else {
-					slideviewer.enable();
-				}
-
-
-				x += (point.x - prevX) / scale;
-				y += (point.y - prevY) / scale;
+				var dx = (point.x - prevX) / scale;
+				var dy = (point.y - prevY) / scale;
+				x += dx;
+				y += dy;
 
 				prevX = point.x;
 				prevY = point.y;
+
+				var maxX = findMaxX();
+				if (Math.abs(x) < maxX) {
+					slideviewer.disable();
+				} else if (Math.abs(startX) >= maxX) {
+					return;
+				}
+
 				dur(0);
 				setTransform();
 			});
