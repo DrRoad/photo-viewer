@@ -1,14 +1,31 @@
 var PhotoViewer = (function (Zepto, jQuery, App) {
 	function TranformStacker(elm) {
 		var self = this;
-		var cs = {
-			x: 0,
-			y: 0,
-			scale: 1,
-		};
-		self.addTransform = function (func, time) {
-			if (time == 0) {
-				func.applyTo(cs);
+		var x = 0;
+		var y = 0;
+		var scale = 1;
+
+		var ax = 0;
+		var ay = 0;
+		var ascale = 1;
+		var astart = 0;
+		var at = 0;
+
+		function reapply() {
+			var s = elm.style;
+			var transform = 'translate3d(' + round(x * scale, 2) + 'px,' + round(y * scale, 2) + 'px,0px) scale(' + round(scale, 2) + ',' + round(scale, 2) + ') ';
+			s.webkitTransform = '';
+			s.webkitTransition = 'transform 0ms';
+
+		}
+
+		self.addTranslate = function (dx, dy, t) {
+			if (t === 0 || t === undefined) {
+				x += dx;
+				y += dy;
+				reapply();
+			} else {
+
 			}
 		}
 		// t: Time, [0...d]
@@ -62,6 +79,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 // 			titles(transform);
 		}
 		function dur(t) {
+			element.style.webkitTransitionProperty = t === 0 ? 'none' : 'all';
 			element.style.webkitTransitionDuration = round(t, 2) + 'ms';
 		}
 		function viewHalfX() {
@@ -111,17 +129,17 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				y: y + (viewHalfY() - sc.y) / scale,
 			}
 		}
-// 		slideviewer.on('flip', function (page) {
-// 			if (page === prevPage) return;
-//
-// 			prevPage = page;
-// 			x = 0;
-// 			y = 0;
-// 			scale = 1;
-// 			dur(500);
-// 			setTransform();
-// 		});
-// 		var prevPage = -1;
+		slideviewer.on('flip', function (page) {
+			if (page === prevPage) return;
+
+			prevPage = page;
+			x = 0;
+			y = 0;
+			scale = 1;
+			dur(500);
+			setTransform();
+		});
+		var prevPage = -1;
 		var prevTouchEnd = 0;
 		Touchy(viewport, {
 		one: function (hand, finger) {
@@ -129,8 +147,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			var prevY = finger.lastPoint.y;
 
 			var maxX = findMaxX();
-			var startX = x;
-			if (Math.abs(startX) >= maxX) {
+			if (Math.abs(x) >= maxX) {
 				slideviewer.enable();
 			}
 			boundXandY();
@@ -232,16 +249,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					scale = minZoom;
 					x = 0;
 					y = 0;
-					dur(500);
-					setTransform();
 				}
 				if (scale > maxZoom) {
 					scale = maxZoom;
-					dur(500);
-					setTransform();
 				}
 				boundXandY();
-				dur(500);
+				dur(300);
 				setTransform();
 			});
 		},
@@ -443,10 +456,9 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			}
 
 			slideviewer = new SlideViewer(wrapper);
-			slideviewer.on('flip', function () {
-				var i = slideviewer.page();
-				updateTitle(i, urls.length);
-				dispatcher.fire('flip', i);
+			slideviewer.on('flip', function (page) {
+				updateTitle(page, urls.length);
+				dispatcher.fire('flip', page);
 			});
 
 			if (App.platform == 'ios') {

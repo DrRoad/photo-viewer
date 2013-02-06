@@ -366,7 +366,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 				masters[i].dataset.pageIndex = masters[i].dataset.upcomingPageIndex;
 			}
 
-			dispatcher.fire('flip');
+			dispatcher.fire('flip', self.page());
 
 			return self;
 		}
