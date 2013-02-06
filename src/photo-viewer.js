@@ -136,7 +136,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			x = 0;
 			y = 0;
 			scale = 1;
-			dur(500);
+			dur(0);
 			setTransform();
 		});
 		var prevPage = -1;
@@ -303,6 +303,15 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		}
 	}
 
+	// Removes all children of node, then adds
+	// newChild as a child.
+	function replaceChildren(node, newChild) {
+		while (node.firstChild) {
+			node.removeChild(node.firstChild);
+		}
+		node.appendChild(newChild);
+	}
+
 	// PhotoViewer takes over the content pane of your app screen.
 	// It wraps SlideViewer for the common case of simply displaying
 	// a set of photos in the content of your app.
@@ -329,15 +338,17 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		// images are loading.
 		self.setLoader = function (newLoaderElm) {
 			loaderElm = newLoaderElm;
-			content.innerHTML = '';
-			content.appendChild(loaderElm);
-			if (slideviewer) slideviewer.invalidate();
+			if (slideviewer) {
+				slideviewer.invalidate();
+			} else {
+				replaceChildren(content, loaderElm);
+			}
 			return self;
 		}
 		self.on = dispatcher.on;
 		self.off = dispatcher.off;
 
-		content.appendChild(loaderElm);
+		replaceChildren(content, loaderElm);
 
 		opts = opts || {};
 		for (var o in defaultOpts) {
@@ -346,8 +357,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 		afterDOMLoad(function () {
 			if (page !== undefined) attachTo(page);
-			if (urls !== undefined) setSource(urls);
-			if (index !== undefined) slideviewer.setPage(index);
 			if (appShown) afterAppShow();
 		});
 
@@ -400,13 +409,24 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			}
 			topbarCover.addEventListener("touchstart", showTitleBar, false);
 
+			slideviewer = new SlideViewer(wrapper);
+			setSource(urls);
+			slideviewer.on('flip', function (page) {
+				updateTitle(page, urls.length);
+				dispatcher.fire('flip', page);
+			});
+			slideviewer.setPage(index);
+
+			if (App.platform == 'ios') {
+				slideviewer.on('move', hideTitleBar);
+			}
+
 			// We don't want to have the slideview in the page when we
 			// are transitioning in, as having a 3d transform within a
 			// 3d transform makes things really laggy. Hence, we wait
 			// until after the app is shown to add the "real" slideview
 			// to the page.
-			content.innerHTML = '';
-			content.appendChild(wrapper);
+			replaceChildren(content, wrapper);
 
 			slideviewer.refreshSize();
 			dispatcher.fire('layout');
@@ -453,16 +473,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				page.removeEventListener('appShow', appShow, false);
 				page.removeEventListener('appLayout', appLayout, false);
 				page.removeEventListener('appHide', appHide, false);
-			}
-
-			slideviewer = new SlideViewer(wrapper);
-			slideviewer.on('flip', function (page) {
-				updateTitle(page, urls.length);
-				dispatcher.fire('flip', page);
-			});
-
-			if (App.platform == 'ios') {
-				slideviewer.on('move', hideTitleBar);
 			}
 
 			page.addEventListener('appLayout', appLayout, false);
@@ -540,14 +550,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				img.style.margin = '0 auto';
 				img.style.display = 'block';
 				img.onload = function () {
-					wrap.innerHTML = '';
+					replaceChildren(wrap, img);
 					centerImage(img);
-					wrap.appendChild(img);
-					new Zoomable(slideviewer, title, wrap, img);
 				}
+				new Zoomable(slideviewer, title, wrap, img);
 				return wrap;
 			});
-// 			slideviewer.disable();
 		}
 	}
 }(window.Zepto, window.jQuery, App));

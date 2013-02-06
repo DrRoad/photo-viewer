@@ -174,7 +174,6 @@ var SlideViewer = (function (Zepto, jQuery) {
 		// touchcancel. Prevents further touch events from
 		// being processed.
 		self.disableTouch = function () {
-			console.log("disabling touch", touchDisabled);
 			if (lastTouch) {
 				dispatcher.fire('end', lastTouch);
 				lastTouch = null;
@@ -185,7 +184,6 @@ var SlideViewer = (function (Zepto, jQuery) {
 		// Simulates a touchstart if a touch is currently
 		// in progress.
 		self.enableTouch = function () {
-			console.log("enabling touch", touchDisabled);
 			if (lastTouch) {
 				dispatcher.fire('start', lastTouch);
 			}
