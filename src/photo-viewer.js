@@ -549,8 +549,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				img.style.margin = '0 auto';
 				img.style.display = 'block';
 				img.onload = function () {
-					replaceChildren(wrap, img);
 					centerImage(img);
+					replaceChildren(wrap, img);
 				}
 				new Zoomable(slideviewer, title, wrap, img);
 				return wrap;
