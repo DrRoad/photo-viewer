@@ -259,7 +259,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			});
 		},
 		});
-		Touchy.stopWindowBounce();
 	}
 	var loaderImg = [
 		"data:image/gif;base64,",
