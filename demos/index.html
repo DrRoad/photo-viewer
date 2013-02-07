@@ -16,7 +16,7 @@ iframe {
 	height: 35px;
 }
 .back:active {
-	background: url(back-button-active.png);
+	background: url(img/back-button-active.png);
 }
 #wrapper {
 	position: relative;
@@ -24,13 +24,13 @@ iframe {
 	width: 295px;
 	height: 463px;
 	padding: 108px 25px 115px 29px;
-	background: url(galaxy-nexus.png);
+	background: url(img/galaxy-nexus.png);
 }
 </style>
 </head>
 <body>
 <div id="wrapper">
-	<iframe src="phone.html" border="none"></iframe>
+	<iframe src="colors.html" border="none"></iframe>
 	<a href="#" class="back"></a>
 </div>
 <script>
@@ -51,7 +51,7 @@ iframe {
 		}
 	}
 	if (isMobile()) {
-		window.location.replace('phone.html');
+		window.location.replace('colors.html');
 	}
 	back.onclick = function () {
 		var w = iframe.contentWindow;

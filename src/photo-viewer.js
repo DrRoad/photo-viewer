@@ -445,9 +445,10 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			var wrappers = wrapper.querySelectorAll('.slideviewer-slide');
 			forEach(wrappers, function (wrapper) {
 				dispatcher.on('layout', function () {
+					var wrap = wrapper.querySelector('div');
 					var img = wrapper.querySelector('img');
-					if (img) {
-						centerImage(img);
+					if (wrap && img) {
+						centerImage(wrap, img);
 					}
 				});
 			});
@@ -488,7 +489,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			}
 		}
 
-		function centerImage(img) {
+		function centerImage(wrap, img) {
 			// I shouldn't really have to do this, but offsetHeight and friends
 			// seem to be failing sparadically. Oh well, we can do this manually!
 			var h = img.naturalHeight;
@@ -508,12 +509,17 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			}
 
 			var oh = opts.autoHideTitle ? topbar.offsetHeight : 0;
-			var marginTop = round(Math.max((ch - h) / 2, 0) - oh);
+			var marginTop = round(Math.max((ch - h) / 2, 0));
 
-			var s = img.style;
-			s.marginTop = marginTop + 'px';
-			s.width = w + 'px';
-			s.height = h + 'px';
+			var is = img.style;
+			is.marginTop = marginTop + 'px';
+			is.width = w + 'px';
+			is.height = h + 'px';
+
+			var ws = wrap.style;
+			ws.width = cw + 'px';
+			ws.height = ch + 'px';
+			ws.top = -oh + 'px';
 		}
 
 		function setSource(newSource) {
@@ -532,8 +538,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			slideviewer.setLen(urls.length);
 			slideviewer.setSource(function (i) {
 				var wrap = document.createElement('div')
-				wrap.style.width = '100%';
-				wrap.style.height = '100%';
+				var ws = wrap.style;
+				ws.position = 'absolute';
+				ws.top = '0px';
+				ws.left = '0px';
+				ws.width = '100%';
+				ws.height = '100%';
 
 				var elm = loaderElm.cloneNode(true /* deep copy */);
 				wrap.appendChild(elm);
@@ -549,7 +559,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				img.style.margin = '0 auto';
 				img.style.display = 'block';
 				img.onload = function () {
-					centerImage(img);
+					centerImage(wrap, img);
 					replaceChildren(wrap, img);
 				}
 				new Zoomable(slideviewer, title, wrap, img);
