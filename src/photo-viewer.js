@@ -81,6 +81,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		function dur(t) {
 			element.style.webkitTransitionProperty = t === 0 ? 'none' : 'all';
 			element.style.webkitTransitionDuration = round(t, 2) + 'ms';
+			element.style.webkitTransitionTimingFunction = 'ease-in-out';
 		}
 		function viewHalfX() {
 			return viewport.offsetWidth / 2;
@@ -145,8 +146,9 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		one: function (hand, finger) {
 			var prevX = finger.lastPoint.x;
 			var prevY = finger.lastPoint.y;
-			var prevT = Date.now();
-			var prevV = 0;
+			var startT = Date.now() / 1000;
+			var distX = 0;
+			var distY = 0;
 
 			var maxX = findMaxX();
 			if (Math.abs(x) >= maxX) {
@@ -161,19 +163,13 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				var dx = (point.x - prevX) / scale;
 				var dy = (point.y - prevY) / scale;
 
-				var newT = Date.now();
-				var dt = newT - prevT;
-				var ds = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-				var v = ds / dt
-
-				prevV = (v + prevV) / 2;
+				distX += dx;
+				distY += dy;
 				x += dx;
 				y += dy;
 
 				prevX = point.x;
 				prevY = point.y;
-
-				prevT = newT;
 
 				var maxX = findMaxX();
 				if (Math.abs(x) <= maxX) {
@@ -212,11 +208,21 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				}
 				prevTouchEnd = t;
 
-				var v = prevV;
-				var a = v < 0 ? 0.05 : -0.05;
-				var d = v * v / (2 * a)
+				console.log(distX, distY);
+				var dt = t/1000 - startT;
+				var vx = distX / dt;
+				var vy = distY / dt;
+				console.log(dt, vx, vy);
+				var ax = vx < 0 ? 500 : -500;
+				var ay = vy < 0 ? 500 : -500;
+				var dx = -vx * vx / (2 * ax);
+				var dy = -vy * vy / (2 * ay);
+				console.log(dx, dy);
+				x += dx;
+				y += dy;
 				boundXandY();
 				dur(500);
+				element.style.webkitTransitionTimingFunction = 'cubic-bezier(.28, .58, .49, .81)';
 				setTransform();
 			});
 		},
