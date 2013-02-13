@@ -322,6 +322,10 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var topbar = page.querySelector('.app-topbar');
 		var title = page.querySelector('.app-title');
 
+		// Fix photos showing over other pages when
+		// transitioning out on iPhone.
+		page.style.overflow = 'hidden';
+
 		var topbarCover = document.createElement('div');
 		var wrapper = document.createElement('div');
 		wrapper.style.width = '100%';
@@ -473,6 +477,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				page.removeEventListener('appShow', appShow, false);
 				page.removeEventListener('appLayout', appLayout, false);
 				page.removeEventListener('appHide', appHide, false);
+				slideviewer.disable3d();
 			}
 
 			page.addEventListener('appLayout', appLayout, false);

@@ -252,8 +252,6 @@ var SlideViewer = (function (Zepto, jQuery) {
 				s.height = '100%';
 				s.width = '100%';
 				s.left = i * 100 + '%';
-// 				s.overflowX = 'hidden';
-// 				s.overflowY = 'visible';
 
 				page.dataset = {};
 
@@ -401,13 +399,23 @@ var SlideViewer = (function (Zepto, jQuery) {
 			return directionLocked;
 		}
 
+		// Although this typically makes things slower, it can
+		// reduce the occurance of rare bugs, especially bugs
+		// relating to the manipulation of the slideviewer
+		// element (such as fading it in and out).
+		use3dAcceleration = true;
+		self.disable3d = function () {
+			use3dAcceleration = false;
+			setPos(xPos);
+		}
+
 		function setPos (x) {
 			xPos = x;
 			// translateZ(0) does not affect our appearance, but hints to the
 			// renderer that it should hardware accelerate us, and thus makes
 			// things much faster and smoother (usually). For reference, see:
 			//     http://www.html5rocks.com/en/tutorials/speed/html5/
-			slider.style[transform] = 'translateX(' + x + 'px) translateZ(0)';
+			slider.style[transform] = 'translateX(' + x + 'px)' + (use3dAcceleration ? ' translateZ(0)' : '');
 		}
 
 		var directionLocked = false;
