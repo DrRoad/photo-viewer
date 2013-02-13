@@ -218,7 +218,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 		var self = this;
 		var slider;
 		var len = 0;
-		var masters = self.masters = [];
+		var masters = [];
 		var activeMaster = 0;
 		var xPos = 0;
 		var minX = 0;
@@ -253,10 +253,8 @@ var SlideViewer = (function (Zepto, jQuery) {
 				s.width = '100%';
 				s.left = i * 100 + '%';
 
-				page.dataset = {};
-
 				slider.appendChild(page);
-				masters.push(page);
+				masters.push({elm: page});
 			}
 
 			inputhandler.attach(wrapper, slider);
@@ -317,9 +315,9 @@ var SlideViewer = (function (Zepto, jQuery) {
 			}
 			function positionMasters(a, b, c) {
 				var m = masters;
-				var sa = m[a].style;
-				var sb = m[b].style;
-				var sc = m[c].style;
+				var sa = m[a].elm.style;
+				var sb = m[b].elm.style;
+				var sc = m[c].elm.style;
 
 				sa.left = (page - 1) * 100 + '%';
 				if (page === 0) sa.visibility = 'hidden';
@@ -332,9 +330,9 @@ var SlideViewer = (function (Zepto, jQuery) {
 				if (page === len - 1) sc.visibility = 'hidden';
 				else sc.visibility = 'visible';
 
-				m[a].dataset.upcomingPageIndex = page === 0 ? len - 1 : page - 1;
-				m[b].dataset.upcomingPageIndex = page;
-				m[c].dataset.upcomingPageIndex = page === len - 1 ? 0 : page + 1;
+				m[a].newPage = page === 0 ? len - 1 : page - 1;
+				m[b].newPage = page;
+				m[c].newPage = page === len - 1 ? 0 : page + 1;
 			}
 			page = clamp(newPage, 0, len - 1);
 			slider.style[transitionDuration] = '0s';
@@ -352,17 +350,15 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 			for (var i = 0; i < 3; i++) {
 				var m = masters[i];
-				var d = m.dataset;
-				if (d.upcomingPageIndex == d.pageIndex) continue;
+				if (m.newPage == m.page) continue;
 
-				m.innerHTML = '';
-				var el = getElement(d.upcomingPageIndex);
-				m.appendChild(getElement(d.upcomingPageIndex));
+				m.elm.innerHTML = '';
+				m.elm.appendChild(getElement(m.newPage));
 
-				masters[i].dataset.pageIndex = masters[i].dataset.upcomingPageIndex;
+				m.page = m.newPage;
 			}
 
-			dispatcher.fire('flip', self.page());
+			dispatcher.fire('flip', self.page(), masters[activeMaster].elm);
 
 			return self;
 		}
@@ -376,8 +372,21 @@ var SlideViewer = (function (Zepto, jQuery) {
 			return self;
 		}
 
+		self.curMaster = function () {
+			for (var i = 0; i < 3; i++) {
+				if (masters[i].page == page) return masters[i].elm;
+			}
+			throw "No master is displaying our current page. This is a bug! Current page: " + i + ", masters: " + JSON.serialize(masters);
+		}
+
+		self.eachMaster = function (cb) {
+			for (var i = 0; i < 3; i++) {
+				cb(masters[i].elm, masters[i].page);
+			}
+		}
+
 		self.invalidate = function () {
-			for (var i = 0; i < 3; i++) masters[i].dataset.pageIndex = -1;
+			for (var i = 0; i < 3; i++) masters[i].page = -1;
 			self.setPage(page);
 			return self;
 		}
@@ -415,7 +424,13 @@ var SlideViewer = (function (Zepto, jQuery) {
 			// renderer that it should hardware accelerate us, and thus makes
 			// things much faster and smoother (usually). For reference, see:
 			//     http://www.html5rocks.com/en/tutorials/speed/html5/
-			slider.style[transform] = 'translateX(' + x + 'px)' + (use3dAcceleration ? ' translateZ(0)' : '');
+			if (use3dAcceleration) {
+				slider.style[transform] = 'translateX(' + x + 'px) translateZ(0)';
+				slider.style.left = '';
+			} else {
+				slider.style[transform] = '';
+				slider.style.left = x + 'px';
+			}
 		}
 
 		var directionLocked = false;

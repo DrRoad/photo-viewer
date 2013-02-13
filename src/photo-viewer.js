@@ -40,6 +40,13 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		};
 	}
 	function Zoomable(slideviewer, title, viewport, element) {
+		var self = this;
+		var use3dAcceleration = false;
+		self.disable3d = function () {
+			use3dAcceleration = false;
+			setTransform();
+// 			console.warn("Zoomable.disable3d() not impemented!")
+		}
 		var x = 0;
 		var y = 0;
 		var scale = 1;
@@ -74,8 +81,21 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			title.innerHTML = '<small style="font-size: 11px">' + s + '</small>';
 		}
 		function setTransform() {
-			var transform = 'translate3d(' + round(x * scale, 2) + 'px,' + round(y * scale, 2) + 'px,0px) scale(' + round(scale, 2) + ',' + round(scale, 2) + ') ';
-			element.style.webkitTransform = transform;
+			var r = round;
+			if (use3dAcceleration) {
+				var transform = 'translateX(' + r(x * scale, 2) + 'px) ' +
+					'translateY(' + r(y * scale, 2) + 'px) ' +
+					'scale(' + r(scale, 2) + ',' + r(scale, 2) + ') ' +
+					'translateZ(0px)';
+				element.style.webkitTransform = transform;
+			} else {
+				var s = element.style;
+// 				s.zoom = scale;
+				s.position = 'relative';
+				s.left = x - element.offsetWidth / 2 * (scale - 1) + 'px';
+				s.top = y - element.offsetHeight / 2 * (scale - 1) + 'px';
+			}
+
 // 			titles(transform);
 		}
 		function dur(t) {
@@ -311,6 +331,16 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		node.appendChild(newChild);
 	}
 
+	function setTransition(elm, val) {
+		elm.style.transition = val;
+		elm.style.webkitTransition = '-webkit-' + val;
+	}
+
+	function setTransform(elm, val) {
+		elm.style.transform = val;
+		elm.style.webkitTransform = val;
+	}
+
 	// PhotoViewer takes over the content pane of your app screen.
 	// It wraps SlideViewer for the common case of simply displaying
 	// a set of photos in the content of your app.
@@ -374,23 +404,19 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		}
 
 		function showTitleBar() {
-			var s = topbar.style;
 			if (App.platform == 'ios') {
 				topbar.style.opacity = '1';
 			} else {
-				topbar.style.transform = '';
-				topbar.style.webkitTransform = '';
+				setTransform(topbar, '');
 			}
 			topbarCover.style.visibility = 'hidden';
 		}
 
 		function hideTitleBar() {
-			var s = topbar.style;
 			if (App.platform == 'ios') {
-				s.opacity = '0';
+				topbar.style.opacity = '0';
 			} else {
-				s.transform = 'translate3d(0, -100%, 0)';
-				s.webkitTransform = 'translate3d(0, -100%, 0)';
+				setTransform(topbar, 'translate3d(0, -100%, 0)');
 			}
 			topbarCover.style.visibility = '';
 		}
@@ -404,25 +430,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var appShown = false;
 		function afterAppShow() {
 			if (App.platform == 'ios') {
-				topbar.style.transition = 'opacity 0.5s ease-in-out 200ms';
-				topbar.style.webkitTransition = 'opacity 0.5s ease-in-out 200ms';
+				setTransition(topbar, 'opacity 0.5s ease-in-out 200ms');
 			} else {
-				topbar.style.transition = 'transform 0.5s ease-in-out 200ms';
-				topbar.style.webkitTransition = '-webkit-transform 0.5s ease-in-out 200ms';
+				setTransition(topbar, 'transform 0.5s ease-in-out 200ms');
 			}
 			topbarCover.addEventListener("touchstart", showTitleBar, false);
-
-			slideviewer = new SlideViewer(wrapper);
-			setSource(urls);
-			slideviewer.on('flip', function (page) {
-				updateTitle(page, urls.length);
-				dispatcher.fire('flip', page);
-			});
-			slideviewer.setPage(index);
-
-			if (App.platform == 'ios') {
-				slideviewer.on('move', hideTitleBar);
-			}
 
 			// We don't want to have the slideview in the page when we
 			// are transitioning in, as having a 3d transform within a
@@ -431,8 +443,18 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			// to the page.
 			replaceChildren(content, wrapper);
 
+			slideviewer = new SlideViewer(wrapper);
+			setSource(urls);
+			slideviewer.on('flip', function (page, elm) {
+				updateTitle(page, urls.length);
+				dispatcher.fire('flip', page);
+			});
 			slideviewer.refreshSize();
-			dispatcher.fire('layout');
+			slideviewer.setPage(index);
+
+			if (App.platform == 'ios') {
+				slideviewer.on('move', hideTitleBar);
+			}
 
 			// A bit of a hack, but this allows us to capture taps
 			// anywhere on the screen, including on the titlebar.
@@ -473,15 +495,31 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				dispatcher.fire('layout');
 			}
 
-			function appHide() {
+			function appBack() {
 				page.removeEventListener('appShow', appShow, false);
 				page.removeEventListener('appLayout', appLayout, false);
-				page.removeEventListener('appHide', appHide, false);
+				page.removeEventListener('appBack', appBack, false);
+				if (!slideviewer) return;
+
 				slideviewer.disable3d();
+				var elm = slideviewer.curMaster();
+				var img = elm.querySelector('img');
+				if (App.platform !== 'ios') {
+					// Removing this on iOS causes
+					// flicker when transitioning
+					// away from the photo viewer.
+					img.style.webkitBackfaceVisibility = '';
+				}
+				img.disable3d();
+				slideviewer.eachMaster(function (elm, page) {
+					if (page !== slideviewer.page()) {
+						elm.style.visibility = 'hidden';
+					}
+				});
 			}
 
 			page.addEventListener('appLayout', appLayout, false);
-			page.addEventListener('appHide', appHide, false);
+			page.addEventListener('appBack', appBack, false);
 
 			if (!appShown) {
 				page.removeEventListener('appShow', appShow, false);
@@ -555,7 +593,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 				var img = document.createElement('img');
 				img.src = source(i);
-				// Hack to get rid of flickering on images. See
+				// Hack to get rid of flickering on images
+				// (iPhone bug). See
 				// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
 				img.style.webkitBackfaceVisibility = 'hidden';
 
@@ -566,8 +605,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				img.onload = function () {
 					centerImage(wrap, img);
 					replaceChildren(wrap, img);
+				};
+				var zoomable = new Zoomable(slideviewer, title, wrap, img);
+				img.disable3d = function () {
+					zoomable.disable3d();
 				}
-				new Zoomable(slideviewer, title, wrap, img);
 				return wrap;
 			});
 		}
