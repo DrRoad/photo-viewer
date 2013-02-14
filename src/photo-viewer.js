@@ -39,7 +39,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			return c/2*(t*t*t + 2) + b;
 		};
 	}
-	function Zoomable(viewport, element, slideviewer) {
+	function Zoomable(viewport, element, parent) {
 		var self = this;
 		var use3dAcceleration = true;
 		self.disable3d = function () {
@@ -136,7 +136,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				y: y + (viewHalfY() - sc.y) / scale,
 			}
 		}
-		slideviewer.on('flip', function (page) {
+		parent.on('flip', function (page) {
 			if (page === prevPage) return;
 
 			prevPage = page;
@@ -155,7 +155,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 			var maxX = findMaxX();
 			if (Math.abs(x) >= maxX) {
-				slideviewer.enable();
+				parent.enable();
 			}
 			boundXandY();
 
@@ -173,8 +173,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 				var maxX = findMaxX();
 				if (Math.abs(x) <= maxX) {
-					slideviewer.disable();
-				} else if (slideviewer.moving()) {
+					parent.disable();
+				} else if (parent.moving()) {
 					return;
 				}
 
@@ -183,7 +183,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			});
 
 			finger.on('end', function (point) {
-				if (slideviewer.moving()) return;
+				if (parent.moving()) return;
 
 				var t = Date.now();
 				var diff = t - prevTouchEnd;
@@ -215,8 +215,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		},
 		two: function (hand, finger1, finger2) {
 			prevTouchEnd = 0;
-			if (slideviewer.moving()) return;
-			slideviewer.disable();
+			if (parent.moving()) return;
+			parent.disable();
 
 			var p1 = finger1.lastPoint;
 			var p2 = finger2.lastPoint;
@@ -250,7 +250,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				var minZoom = 1;
 				var maxZoom = 4;
 				if (scale <= 1) {
-					slideviewer.enable();
+					parent.enable();
 				}
 				if (scale < minZoom) {
 					scale = minZoom;
@@ -408,9 +408,9 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			if (!slideviewer) return;
 
 			slideviewer.disable3d();
-			var elm = slideviewer.curMaster();
-			var img = elm.querySelector('img');
 			if (App.platform !== 'ios') {
+				var elm = slideviewer.curMaster();
+				var img = elm.querySelector('img');
 				// Removing this on iOS causes
 				// flicker when transitioning
 				// away from the photo viewer.
@@ -422,6 +422,10 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				}
 			});
 
+			// This clips the image under the titlebar, but
+			// removing it causes strange flickers on android,
+			// and the image to spill over into neighbouring
+			// screens on iOS.
 			content.style.overflow = 'hidden';
 		}
 
@@ -588,6 +592,9 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				var zoomable = new Zoomable(wrap, img, slideviewer);
 				img.disable3d = function () {
 					zoomable.disable3d();
+				}
+				img.resetZoom = function () {
+					zoomable.reset();
 				}
 				return wrap;
 			});

@@ -408,7 +408,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 		// to a user's touch currently? Useful for determining
 		// what component should handle a touch interaction.
 		self.moving = function () {
-			return directionLocked;
+			return startedMoving;
 		}
 
 		// Although this typically makes things slower, it can
@@ -436,7 +436,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			}
 		}
 
-		var directionLocked = false;
+		var startedMoving = false;
 		function onStart (point) {
 			inputhandler.off('start');
 			inputhandler.on('end', onEndNoMove);
@@ -445,8 +445,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			var startY = point.pageY;
 			var prevX = startX;
 			var prevY = startY;
-			var startedMoving = false;
-			directionLocked = false;
+			startedMoving = false;
 
 			slider.style[transitionDuration] = '0s';
 			inputhandler.on('move', onMove);
@@ -459,20 +458,14 @@ var SlideViewer = (function (Zepto, jQuery) {
 				var absX = Math.abs(prevX - startX);
 				var absY = Math.abs(prevY - startY);
 
-				// We take a 10px buffer to figure out the direction of the swipe
-				if (absX < 10 && absY < 10 && !startedMoving) {
+				// We take a buffer to figure out if the swipe
+				// was most likely intended for our consumption.
+				// (and not just the start of a zoom operation
+				// or other gesture).
+				if (absX < 50 && absY < 50 && !startedMoving) {
 					return;
 				}
 				startedMoving = true;
-
-				// We are scrolling vertically, so skip SlideViewer and give the control back to the browser
-				if (absY > absX/2 && !directionLocked) {
-					inputhandler.off('move');
-					inputhandler.off('end');
-					inputhandler.on('start', onStart);
-					return;
-				}
-				directionLocked = true;
 
 				var newX = xPos + dx;
 				if (newX > 0 || newX < minX) {
