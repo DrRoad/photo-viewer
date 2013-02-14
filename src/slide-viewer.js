@@ -309,6 +309,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			return page;
 		}
 
+		var prevPage = -1;
 		self.setPage = function (newPage) {
 			if (typeof newPage !== 'number') {
 				throw "SlideViewer.setPage() requires a number! ('" + newPage + "' given)";
@@ -358,7 +359,10 @@ var SlideViewer = (function (Zepto, jQuery) {
 				m.page = m.newPage;
 			}
 
-			dispatcher.fire('flip', self.page(), masters[activeMaster].elm);
+			if (prevPage !== newPage) {
+				dispatcher.fire('flip', newPage, masters[activeMaster].elm);
+				prevPage = newPage;
+			}
 
 			return self;
 		}
