@@ -404,7 +404,10 @@ var SlideViewer = (function (Zepto, jQuery) {
 			inputhandler.enableTouch();
 		}
 
-		self.isDirectionLocked = function () {
+		// Are we actually moving the slideviewer in response
+		// to a user's touch currently? Useful for determining
+		// what component should handle a touch interaction.
+		self.moving = function () {
 			return directionLocked;
 		}
 
@@ -412,7 +415,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 		// reduce the occurance of rare bugs, especially bugs
 		// relating to the manipulation of the slideviewer
 		// element (such as fading it in and out).
-		use3dAcceleration = true;
+		var use3dAcceleration = true;
 		self.disable3d = function () {
 			use3dAcceleration = false;
 			setPos(xPos);

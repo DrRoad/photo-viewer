@@ -41,6 +41,11 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 	}
 	function Zoomable(viewport, element, slideviewer) {
 		var self = this;
+		var use3dAcceleration = true;
+		self.disable3d = function () {
+			use3dAcceleration = false;
+			setTransform();
+		}
 		var x = 0;
 		var y = 0;
 		var scale = 1;
@@ -73,11 +78,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		}
 		function setTransform() {
 			var r = round;
-			var transform =
-				'translateX(' + r(x * scale, 2) + 'px) ' +
-				'translateY(' + r(y * scale, 2) + 'px) ' +
-				'scale(' + r(scale, 2) + ',' + r(scale, 2) + ') ';
-			element.style.webkitTransform = transform;
+			var tx = r(x * scale, 2);
+			var ty = r(y * scale, 2);
+			var ts = r(scale, 2);
+			var t = '';
+			t = 'translateX(' + tx + 'px) translateY(' + ty + 'px) scale(' + ts + ',' + ts + ')';
+			element.style.webkitTransform = t;
 		}
 		function dur(t) {
 			element.style.webkitTransitionProperty = t === 0 ? 'none' : 'all';
@@ -168,7 +174,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				var maxX = findMaxX();
 				if (Math.abs(x) <= maxX) {
 					slideviewer.disable();
-				} else if (slideviewer.isDirectionLocked()) {
+				} else if (slideviewer.moving()) {
 					return;
 				}
 
@@ -177,7 +183,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			});
 
 			finger.on('end', function (point) {
-				if (slideviewer.isDirectionLocked()) return;
+				if (slideviewer.moving()) return;
 
 				var t = Date.now();
 				var diff = t - prevTouchEnd;
@@ -209,7 +215,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		},
 		two: function (hand, finger1, finger2) {
 			prevTouchEnd = 0;
-			if (slideviewer.isDirectionLocked()) return;
+			if (slideviewer.moving()) return;
 			slideviewer.disable();
 
 			var p1 = finger1.lastPoint;
@@ -559,6 +565,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				ws.left = '0px';
 				ws.width = '100%';
 				ws.height = '100%';
+				ws.overflow = 'hidden';
 
 				var elm = loaderElm.cloneNode(true /* deep copy */);
 				wrap.appendChild(elm);
@@ -578,7 +585,10 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					centerImage(wrap, img);
 					replaceChildren(wrap, img);
 				};
-				new Zoomable(wrap, img, slideviewer);
+				var zoomable = new Zoomable(wrap, img, slideviewer);
+				img.disable3d = function () {
+					zoomable.disable3d();
+				}
 				return wrap;
 			});
 		}
