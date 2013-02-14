@@ -365,12 +365,60 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			opts[o] = opts[o] === undefined ? defaultOpts[o] : opts[o];
 		}
 
-		afterDOMLoad(function () {
-			if (page !== undefined) attachTo(page);
-			if (appShown) afterAppShow();
-		});
+		if (opts.autoHideTitle) {
+			Clickable(wrapper);
+			wrapper.addEventListener('click', toggleTitleBar, false);
+		}
 
 		updateTitle(index, urls.length);
+
+		page.addEventListener('appShow', appShow, false);
+		page.addEventListener('appLayout', appLayout, false);
+		page.addEventListener('appBack', appBack, false);
+		var appShown = false;
+		function appShow () {
+			appShown = true;
+		}
+		afterDOMLoad(function () {
+			if (appShown) {
+				afterAppShow();
+			} else {
+				page.removeEventListener('appShow', appShow, false);
+				page.addEventListener('appShow', afterAppShow, false);
+			}
+		});
+
+		return;
+
+		function appLayout() {
+			dispatcher.fire('layout');
+		}
+
+		function appBack() {
+			page.removeEventListener('appShow', appShow, false);
+			page.removeEventListener('appShow', afterAppShow, false);
+			page.removeEventListener('appLayout', appLayout, false);
+			page.removeEventListener('appBack', appBack, false);
+			if (!slideviewer) return;
+
+			slideviewer.disable3d();
+			var elm = slideviewer.curMaster();
+			var img = elm.querySelector('img');
+			if (App.platform !== 'ios') {
+				// Removing this on iOS causes
+				// flicker when transitioning
+				// away from the photo viewer.
+				img.style.webkitBackfaceVisibility = '';
+			}
+			slideviewer.eachMaster(function (elm, page) {
+				if (page !== slideviewer.page()) {
+					elm.style.visibility = 'hidden';
+				}
+			});
+
+			content.style.overflow = 'hidden';
+		}
+
 
 		function toggleTitleBar() {
 			if (topbarCover.style.visibility == '') {
@@ -404,7 +452,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			}
 		}
 
-		var appShown = false;
 		function afterAppShow() {
 			if (App.platform == 'ios') {
 				setTransition(topbar, 'opacity 0.5s ease-in-out 200ms');
@@ -455,55 +502,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					}
 				});
 			});
-		}
-
-		function appShow () {
-			appShown = true;
-		}
-
-		page.addEventListener('appShow', appShow, false);
-
-		function attachTo(page) {
-			function appLayout() {
-				dispatcher.fire('layout');
-			}
-
-			function appBack() {
-				page.removeEventListener('appShow', appShow, false);
-				page.removeEventListener('appLayout', appLayout, false);
-				page.removeEventListener('appBack', appBack, false);
-				if (!slideviewer) return;
-
-				slideviewer.disable3d();
-				var elm = slideviewer.curMaster();
-				var img = elm.querySelector('img');
-				if (App.platform !== 'ios') {
-					// Removing this on iOS causes
-					// flicker when transitioning
-					// away from the photo viewer.
-					img.style.webkitBackfaceVisibility = '';
-				}
-				slideviewer.eachMaster(function (elm, page) {
-					if (page !== slideviewer.page()) {
-						elm.style.visibility = 'hidden';
-					}
-				});
-
-				content.style.overflow = 'hidden';
-			}
-
-			page.addEventListener('appLayout', appLayout, false);
-			page.addEventListener('appBack', appBack, false);
-
-			if (!appShown) {
-				page.removeEventListener('appShow', appShow, false);
-				page.addEventListener('appShow', afterAppShow, false);
-			}
-
-			if (opts.autoHideTitle) {
-				Clickable(wrapper);
-				wrapper.addEventListener('click', toggleTitleBar, false);
-			}
 		}
 
 		function centerImage(wrap, img) {
