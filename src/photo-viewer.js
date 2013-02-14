@@ -39,14 +39,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			return c/2*(t*t*t + 2) + b;
 		};
 	}
-	function Zoomable(slideviewer, title, viewport, element) {
+	function Zoomable(viewport, element, slideviewer) {
 		var self = this;
-		var use3dAcceleration = false;
-		self.disable3d = function () {
-			use3dAcceleration = false;
-			setTransform();
-// 			console.warn("Zoomable.disable3d() not impemented!")
-		}
 		var x = 0;
 		var y = 0;
 		var scale = 1;
@@ -77,26 +71,13 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			return JSON.stringify(newO) + ' ';
 
 		}
-		function titles(s) {
-			title.innerHTML = '<small style="font-size: 11px">' + s + '</small>';
-		}
 		function setTransform() {
 			var r = round;
-			if (use3dAcceleration) {
-				var transform = 'translateX(' + r(x * scale, 2) + 'px) ' +
-					'translateY(' + r(y * scale, 2) + 'px) ' +
-					'scale(' + r(scale, 2) + ',' + r(scale, 2) + ') ' +
-					'translateZ(0px)';
-				element.style.webkitTransform = transform;
-			} else {
-				var s = element.style;
-// 				s.zoom = scale;
-				s.position = 'relative';
-				s.left = x - element.offsetWidth / 2 * (scale - 1) + 'px';
-				s.top = y - element.offsetHeight / 2 * (scale - 1) + 'px';
-			}
-
-// 			titles(transform);
+			var transform =
+				'translateX(' + r(x * scale, 2) + 'px) ' +
+				'translateY(' + r(y * scale, 2) + 'px) ' +
+				'scale(' + r(scale, 2) + ',' + r(scale, 2) + ') ';
+			element.style.webkitTransform = transform;
 		}
 		function dur(t) {
 			element.style.webkitTransitionProperty = t === 0 ? 'none' : 'all';
@@ -352,10 +333,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var topbar = page.querySelector('.app-topbar');
 		var title = page.querySelector('.app-title');
 
-		// Fix photos showing over other pages when
-		// transitioning out on iPhone.
-		page.style.overflow = 'hidden';
-
 		var topbarCover = document.createElement('div');
 		var wrapper = document.createElement('div');
 		wrapper.style.width = '100%';
@@ -468,19 +445,15 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			cs.visibility = "hidden";
 			page.appendChild(topbarCover);
 
-			var wrappers = wrapper.querySelectorAll('.slideviewer-slide');
-			forEach(wrappers, function (wrapper) {
-				dispatcher.on('layout', function () {
-					var wrap = wrapper.querySelector('div');
-					var img = wrapper.querySelector('img');
+			dispatcher.on('layout', function () {
+				slideviewer.refreshSize();
+				slideviewer.eachMaster(function (elm) {
+					var wrap = elm.querySelector('div');
+					var img = elm.querySelector('img');
 					if (wrap && img) {
 						centerImage(wrap, img);
 					}
 				});
-			});
-
-			dispatcher.on('layout', function () {
-				slideviewer.refreshSize();
 			});
 		}
 
@@ -510,12 +483,13 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					// away from the photo viewer.
 					img.style.webkitBackfaceVisibility = '';
 				}
-				img.disable3d();
 				slideviewer.eachMaster(function (elm, page) {
 					if (page !== slideviewer.page()) {
 						elm.style.visibility = 'hidden';
 					}
 				});
+
+				content.style.overflow = 'hidden';
 			}
 
 			page.addEventListener('appLayout', appLayout, false);
@@ -606,10 +580,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					centerImage(wrap, img);
 					replaceChildren(wrap, img);
 				};
-				var zoomable = new Zoomable(slideviewer, title, wrap, img);
-				img.disable3d = function () {
-					zoomable.disable3d();
-				}
+				new Zoomable(wrap, img, slideviewer);
 				return wrap;
 			});
 		}
