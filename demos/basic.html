@@ -40,13 +40,13 @@
 		<script src="../../src/touchy.js"></script>
 		<script src="../../src/dispatcher.js"></script>
 		<script src="../../src/slide-viewer.js"></script>
+		<script src="../../src/zoomable.js"></script>
 		<script src="../../src/photo-viewer.js"></script>
 
 		<script>
 		(function (App, PhotoViewer) {
 			App.populator('viewer', function (page, data) {
-				var urls  = data.images;
-				var p = new PhotoViewer(page, urls, parseInt(data.index, 10));
+				var p = new PhotoViewer(page, data.images, parseInt(data.index, 10));
 				p.on('flip', function (i) {
 					data.index = i;
 					App.saveStack();
