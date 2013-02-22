@@ -46,7 +46,9 @@
 		<script>
 		(function (App, PhotoViewer) {
 			App.populator('viewer', function (page, data) {
-				var p = new PhotoViewer(page, data.images, parseInt(data.index, 10));
+				var p = new PhotoViewer(page, data.images, {
+					startAt: parseInt(data.index, 10)
+				});
 				p.on('flip', function (i) {
 					data.index = i;
 					App.saveStack();

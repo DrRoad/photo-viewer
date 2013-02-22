@@ -25,6 +25,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 	}());
 
 	var defaultOpts = {
+		startAt: 0,
 		automaticTitles: true,
 		autoHideTitle: true,
 		loadingElm: defaultLoadingElm,
@@ -74,7 +75,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 	// PhotoViewer takes over the content pane of your app screen.
 	// It wraps SlideViewer for the common case of simply displaying
 	// a set of photos in the content of your app.
-	function PhotoViewer(page, urls, index, opts) {
+	function PhotoViewer(page, urls, opts) {
 		var self = this;
 		var slideviewer;
 		var dispatcher = new Dispatcher();
@@ -87,9 +88,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		wrapper.style.width = '100%';
 		wrapper.style.height = '100%';
 
-		// If you want the loader element to be custom skinned for your application,
-		// you can pass in an element here to be used for a placeholder while your
-		// images are loading.
+		// DO NOT USE!
 		self.setLoader = function (newLoadingElm) {
 			console.warn("PhotoViewer.setLoader() is depreciated! Use opts.loadingElm instead.");
 			loadingElm = newLoadingElm;
@@ -103,21 +102,27 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		self.on = dispatcher.on;
 		self.off = dispatcher.off;
 
-
+		if (!page) throw "Page argument required!";
+		if (!urls) throw "You gave me an empty list of urls, I can't do anything with that!";
+		if (typeof opts === 'number') {
+			console.warn("Passing index as the third argument is depreciated! Use opts.startAt instead.");
+			var startAt = opts;
+			opts = arguments[3] || {};
+			opts.startAt = startAt;
+		}
 		opts = opts || {};
 		for (var o in defaultOpts) {
 			opts[o] = opts[o] === undefined ? defaultOpts[o] : opts[o];
 		}
 
-		var loadingElm = opts.loadingElm;
-		replaceChildren(content, loadingElm);
+		replaceChildren(content, opts.loadingElm);
 
 		if (opts.autoHideTitle) {
 			Clickable(wrapper);
 			wrapper.addEventListener('click', toggleTitleBar, false);
 		}
 
-		updateTitle(index, urls.length);
+		updateTitle(opts.startAt, urls.length);
 
 		page.addEventListener('appShow', appShow, false);
 		page.addEventListener('appLayout', appLayout, false);
@@ -240,7 +245,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			});
 			slideviewer.refreshSize();
 			setSource(urls);
-			slideviewer.setPage(index);
+			slideviewer.setPage(opts.startAt);
 
 			if (App.platform == 'ios') {
 				slideviewer.on('move', hideTitleBar);
@@ -316,7 +321,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				ws.height = '100%';
 				ws.overflow = 'hidden';
 
-				var elm = loadingElm.cloneNode(true /* deep copy */);
+				var elm = opts.loadingElm.cloneNode(true /* deep copy */);
 				wrap.appendChild(elm);
 
 				var img = document.createElement('img');
