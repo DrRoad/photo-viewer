@@ -88,7 +88,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		wrapper.style.width = '100%';
 		wrapper.style.height = '100%';
 
-		// DO NOT USE!
 		self.setLoader = function (newLoadingElm) {
 			console.warn("PhotoViewer.setLoader() is depreciated! Use opts.loadingElm instead.");
 			loadingElm = newLoadingElm;
@@ -102,18 +101,24 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		self.on = dispatcher.on;
 		self.off = dispatcher.off;
 
-		if (!page) throw "Page argument required!";
-		if (!urls) throw "You gave me an empty list of urls, I can't do anything with that!";
-		if (typeof opts === 'number') {
-			console.warn("Passing index as the third argument is depreciated! Use opts.startAt instead.");
-			var startAt = opts;
-			opts = arguments[3] || {};
-			opts.startAt = startAt;
+		function validateArgs() {
+			if (!page) throw "Page argument required!";
+			if (!urls) throw "You gave me an empty list of urls, I can't do anything with that!";
+			if (!Array.isArray(urls)) {
+				throw "PhotoViewer setSource expects an array of photo URLs for a source, '" + newSource + "' given."
+			}
+			if (typeof opts === 'number') {
+				console.warn("Passing index as the third argument is depreciated! Use opts.startAt instead.");
+				var startAt = opts;
+				opts = arguments[3] || {};
+				opts.startAt = startAt;
+			}
+			opts = opts || {};
+			for (var o in defaultOpts) {
+				opts[o] = opts[o] === undefined ? defaultOpts[o] : opts[o];
+			}
 		}
-		opts = opts || {};
-		for (var o in defaultOpts) {
-			opts[o] = opts[o] === undefined ? defaultOpts[o] : opts[o];
-		}
+		validateArgs();
 
 		replaceChildren(content, opts.loadingElm);
 
@@ -231,8 +236,12 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			// to the page.
 			replaceChildren(content, wrapper);
 
+			slideviewer = new SlideViewer(wrapper, source, {
+				allowScroll: false,
+				length: urls.length,
+				startAt: opts.startAt,
+			});
 			var zoomable;
-			slideviewer = new SlideViewer(wrapper);
 			slideviewer.on('flip', function (page, elm) {
 				updateTitle(page, urls.length);
 
@@ -243,9 +252,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 				dispatcher.fire('flip', page);
 			});
-			slideviewer.refreshSize();
-			setSource(urls);
-			slideviewer.setPage(opts.startAt);
 
 			if (App.platform == 'ios') {
 				slideviewer.on('move', hideTitleBar);
@@ -262,6 +268,39 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			cs.opacity = "0";
 			cs.visibility = "hidden";
 			page.appendChild(topbarCover);
+
+			function source(i) {
+				var wrap = document.createElement('div')
+				var ws = wrap.style;
+				ws.position = 'absolute';
+				ws.top = '0px';
+				ws.left = '0px';
+				ws.width = '100%';
+				ws.height = '100%';
+				ws.overflow = 'hidden';
+
+				var elm = opts.loadingElm.cloneNode(true /* deep copy */);
+				wrap.appendChild(elm);
+
+				var img = document.createElement('img');
+				img.src = urls[i];
+				// Hack to get rid of flickering on images
+				// (iPhone bug). See
+				// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
+				img.style.webkitBackfaceVisibility = 'hidden';
+
+				img.style.webkitUserSelect = 'none';
+				img.style.webkitUserDrag = 'none';
+				img.style.margin = '0 auto';
+				img.style.display = 'none';
+				img.onload = function () {
+					centerImage(wrap, img);
+					img.style.display = 'block';
+					elm.parentNode.removeChild(elm);
+				};
+				wrap.appendChild(img);
+				return wrap;
+			}
 		}
 
 		function centerImage(wrap, img) {
@@ -295,54 +334,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			ws.width = cw + 'px';
 			ws.height = ch + 'px';
 			ws.top = -oh + 'px';
-		}
-
-		function setSource(newSource) {
-			if (!Array.isArray(newSource)) {
-				throw "PhotoViewer setSource expects an array of photo URLs for a source, '" + newSource + "' given.";
-			}
-			urls = newSource;
-
-			function source (i) {
-				if (i < 0 || i >= urls.length) {
-					throw "Out of bounds! Trying to get element at index '" + i + "', but length is only '" + urls.length + "'";
-				}
-				return urls[i];
-			}
-
-			slideviewer.setLen(urls.length);
-			slideviewer.setSource(function (i) {
-				var wrap = document.createElement('div')
-				var ws = wrap.style;
-				ws.position = 'absolute';
-				ws.top = '0px';
-				ws.left = '0px';
-				ws.width = '100%';
-				ws.height = '100%';
-				ws.overflow = 'hidden';
-
-				var elm = opts.loadingElm.cloneNode(true /* deep copy */);
-				wrap.appendChild(elm);
-
-				var img = document.createElement('img');
-				img.src = source(i);
-				// Hack to get rid of flickering on images
-				// (iPhone bug). See
-				// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
-				img.style.webkitBackfaceVisibility = 'hidden';
-
-				img.style.webkitUserSelect = 'none';
-				img.style.webkitUserDrag = 'none';
-				img.style.margin = '0 auto';
-				img.style.display = 'none';
-				img.onload = function () {
-					centerImage(wrap, img);
-					img.style.display = 'block';
-					elm.parentNode.removeChild(elm);
-				};
-				wrap.appendChild(img);
-				return wrap;
-			});
 		}
 	}
 }(window.Zepto, window.jQuery, App));
