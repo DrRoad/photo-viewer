@@ -8,7 +8,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 		allowScroll: true,
 		// If your source function is bounded by some
 		// known limit, you can set it here.
-		length: Infinity,
+		length: 10,
 		// If you want to start somewhere other than
 		// on the first slide, setting this (rather
 		// than calling .setPage()) will prevent your
@@ -31,12 +31,14 @@ var SlideViewer = (function (Zepto, jQuery) {
 		var xPos = 0;
 		var minX = 0;
 		var snapThreshold = 0;
+		var pageWidth = 0;
 		var inputhandler = new InputHandler(vendor);
 
 		if (typeof source !== 'function') {
 			throw "SlideViewer second argument should be a generator function!";
 		}
 
+		if (opts === undefined) opts = {};
 		for (var opt in defaultOpts) {
 			if (opts[opt] === undefined) {
 				opts[opt] = defaultOpts[opt];
