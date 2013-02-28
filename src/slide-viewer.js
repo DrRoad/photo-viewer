@@ -362,9 +362,8 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 			// In case they return us a zepto or jQuery
 			// object rather than a raw DOM node
-			if (element instanceof $ ||
-				($ && $.zepto && $.zepto.isZ(element))) {
-					element = element[0];
+			if (!isElement(element) && element.length) {
+				element = element[0];
 			}
 
 			if (isElement(element)) {
