@@ -360,6 +360,13 @@ var SlideViewer = (function (Zepto, jQuery) {
 				return errorPage("Exception returned from source() function with input " + i + ". Message: " + e);
 			}
 
+			// In case they return us a zepto or jQuery
+			// object rather than a raw DOM node
+			if (element instanceof $ ||
+				($ && $.zepto && $.zepto.isZ(element))) {
+					element = element[0];
+			}
+
 			if (isElement(element)) {
 				return element;
 			} else {
