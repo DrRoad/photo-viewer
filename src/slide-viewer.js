@@ -34,6 +34,9 @@ var SlideViewer = (function (Zepto, jQuery) {
 		var pageWidth = 0;
 		var inputhandler = new InputHandler(vendor);
 
+		if (!isElement(wrapper)) {
+			throw "SlideViewer first argument should be a DOM node which wraps the slider. Got " + wrapper;
+		}
 		if (typeof source !== 'function') {
 			throw "SlideViewer second argument should be a generator function!";
 		}
@@ -50,6 +53,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 		function init () {
 			wrapper.style.postition = 'relative';
+			wrapper.innerHTML = '';
 
 			slider = document.createElement('div');
 			var s = slider.style;
