@@ -240,6 +240,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				allowScroll: false,
 				length: urls.length,
 				startAt: opts.startAt,
+				bufferDist: 50,
 			});
 			var zoomable;
 			slideviewer.on('flip', function (page, elm) {

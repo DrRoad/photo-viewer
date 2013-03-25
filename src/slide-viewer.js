@@ -15,6 +15,10 @@ var SlideViewer = (function (Zepto, jQuery) {
 		// source function being called more times
 		// than necessary.
 		startAt: 0,
+		// How far from the point of initial contact does the user
+		// have to move their fingers before we interpret their
+		// action?
+		bufferDist: 10,
 	}
 
 	// Wrapper is an element which will contain the
@@ -240,7 +244,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 
 		var startedMoving = false;
 		var directionLocked = false;
-		function onStart (point) {
+		function onStart(point) {
 			inputhandler.off('start');
 			inputhandler.on('end', onEndNoMove);
 
@@ -254,7 +258,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			setTransitionDuration(0);
 			inputhandler.on('move', onMove);
 
-			function onMove (e, point) {
+			function onMove(e, point) {
 				var dx = point.pageX - prevX;
 				prevX = point.pageX;
 				prevY = point.pageY;
@@ -266,7 +270,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 				// was most likely intended for our consumption.
 				// (and not just the start of a zoom operation
 				// or other gesture).
-				if (absX < 50 && absY < 50 && !startedMoving) {
+				if (!startedMoving && absX < opts.bufferDist && absY < opts.bufferDist) {
 					return;
 				}
 				startedMoving = true;
@@ -291,7 +295,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 				dispatcher.fire('move', newX);
 			}
 
-			function onEnd (point) {
+			function onEnd(point) {
 				inputhandler.off('move');
 				inputhandler.off('end');
 				inputhandler.on('transitionEnd', onTransitionEnd);
@@ -333,20 +337,20 @@ var SlideViewer = (function (Zepto, jQuery) {
 				setPos(newX);
 			}
 
-			function onEndNoMove () {
+			function onEndNoMove() {
 				inputhandler.off('move');
 				inputhandler.off('end');
 				inputhandler.on('start', onStart);
 			}
 
-			function onTransitionEnd (e) {
+			function onTransitionEnd(e) {
 				inputhandler.off('transitionEnd');
 				self.setPage(page);
 				inputhandler.on('start', onStart);
 			}
 		}
 
-		function getElement (i) {
+		function getElement(i) {
 			function errorPage(customMessage) {
 				var err = document.createElement('p');
 				err.innerHTML = "There was an error creating this page! Contact the developer for more information..." + "<br><br>" + customMessage;
@@ -419,7 +423,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 	}
 
 
-	function InputHandler (vendor) {
+	function InputHandler(vendor) {
 		var self = this;
 		var hasTouch = 'ontouchstart' in window;
 		var resizeEvent = 'onorientationchange' in window ? 'orientationchange' : 'resize';
@@ -450,7 +454,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			return null;
 		}
 
-		function handleEvent (e) {
+		function handleEvent(e) {
 			var t = e.type;
 			if (t == resizeEvent) {
 				dispatcher.fire('resize', e);
@@ -561,22 +565,22 @@ var SlideViewer = (function (Zepto, jQuery) {
 		return false;
 	})();
 
-	function prefixStyle (style) {
+	function prefixStyle(style) {
 		if (vendor === '') return style;
 		style = style.charAt(0).toUpperCase() + style.substr(1);
 		return vendor + style;
 	}
 
 	// Mod in javascript is messed up for negative numbers.
-	function mod (a, b) {
+	function mod(a, b) {
 		return ((a % b) + b) % b;
 	}
 
-	function clamp (n, min, max) {
+	function clamp(n, min, max) {
 		return Math.max(min, Math.min(max, n));
 	}
 
-	function isElement (o) {
+	function isElement(o) {
 		if (typeof HTMLElement === "object") {
 			return o instanceof HTMLElement
 		} else {
