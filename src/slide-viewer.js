@@ -1,4 +1,4 @@
-var SlideViewer = (function (Zepto, jQuery) {
+PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 	var defaultOpts = {
 		// Should we allow scrolling in scrollable
 		// regions inside or outside of the slideviewer?
@@ -84,7 +84,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			inputhandler.attach(wrapper, slider);
 			inputhandler.on('start', onStart);
 			inputhandler.on('resize', self.refreshSize);
-			dispatcher.on('destroy', function () {
+			eventBus.on('destroy', function () {
 				inputhandler.detach();
 			});
 
@@ -92,9 +92,9 @@ var SlideViewer = (function (Zepto, jQuery) {
 			self.setPage(opts.startAt);
 		}
 
-		var dispatcher = new Dispatcher();
-		self.on = dispatcher.on;
-		self.off = dispatcher.off;
+		var eventBus = new EventBus();
+		self.on = eventBus.on;
+		self.off = eventBus.off;
 
 		self.refreshSize = function () {
 			pageWidth = wrapper.clientWidth;
@@ -166,7 +166,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 			}
 
 			if (prevPage !== newPage) {
-				dispatcher.fire('flip', newPage, masters[activeMaster].elm);
+				eventBus.fire('flip', newPage, masters[activeMaster].elm);
 				prevPage = newPage;
 			}
 
@@ -193,7 +193,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 		}
 
 		self.destroy = function () {
-			dispatcher.fire('destroy');
+			eventBus.fire('destroy');
 			return self;
 		}
 
@@ -292,7 +292,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 				e.preventDefault();
 				inputhandler.off('end').on('end', onEnd);
 				setPos(newX);
-				dispatcher.fire('move', newX);
+				eventBus.fire('move', newX);
 			}
 
 			function onEnd(point) {
@@ -417,9 +417,9 @@ var SlideViewer = (function (Zepto, jQuery) {
 			}
 		}
 
-		var dispatcher = new Dispatcher();
-		self.on = dispatcher.on;
-		self.off = dispatcher.off;
+		var eventBus = new EventBus();
+		self.on = eventBus.on;
+		self.off = eventBus.off;
 	}
 
 
@@ -457,9 +457,9 @@ var SlideViewer = (function (Zepto, jQuery) {
 		function handleEvent(e) {
 			var t = e.type;
 			if (t == resizeEvent) {
-				dispatcher.fire('resize', e);
+				eventBus.fire('resize', e);
 			} else if (t == transitionEndEvent) {
-				dispatcher.fire('transitionEnd', e);
+				eventBus.fire('transitionEnd', e);
 			}
 
 			if (touchDisabled) {
@@ -475,19 +475,19 @@ var SlideViewer = (function (Zepto, jQuery) {
 					if (lastTouch) return;
 				   lastTouch = e.changedTouches[0];
 				}
-				dispatcher.fire('start', hasTouch ? e.changedTouches[0] : e);
+				eventBus.fire('start', hasTouch ? e.changedTouches[0] : e);
 			} else if (t == moveEvent) {
 				if (!hasTouch) {
-					dispatcher.fire('move', e, e);
+					eventBus.fire('move', e, e);
 					return
 				}
 
 				var touch = findTouch(e.touches, touchID);
 				lastTouch = touch;
-				dispatcher.fire('move', e, touch);
+				eventBus.fire('move', e, touch);
 			} else if (t == cancelEvent || t == endEvent) {
 				if (!hasTouch) {
-					dispatcher.fire('end', e);
+					eventBus.fire('end', e);
 					return;
 				}
 
@@ -496,14 +496,14 @@ var SlideViewer = (function (Zepto, jQuery) {
 				   var touch = findTouch(e.changedTouches, touchID);
 				if (!touch) touch = findTouch(e.touches, touchID);
 
-				   dispatcher.fire('end', touch);
+				   eventBus.fire('end', touch);
 				lastTouch = null;
 			}
 		}
 
-		var dispatcher = new Dispatcher();
-		self.on = dispatcher.on;
-		self.off = dispatcher.off;
+		var eventBus = new EventBus();
+		self.on = eventBus.on;
+		self.off = eventBus.off;
 
 		var wrapper;
 		var slider;
@@ -535,7 +535,7 @@ var SlideViewer = (function (Zepto, jQuery) {
 		// being processed.
 		self.disableTouch = function () {
 			if (lastTouch) {
-				dispatcher.fire('end', lastTouch);
+				eventBus.fire('end', lastTouch);
 				lastTouch = null;
 			}
 			touchDisabled = true;
@@ -545,9 +545,65 @@ var SlideViewer = (function (Zepto, jQuery) {
 		// in progress.
 		self.enableTouch = function () {
 			if (lastTouch) {
-				dispatcher.fire('start', lastTouch);
+				eventBus.fire('start', lastTouch);
 			}
 			touchDisabled = false;
+		}
+	}
+
+	// http://github.com/crazy2be/EventBus.js
+	function EventBus() {
+		var self = this;
+		var callbacks = {};
+		self.callbacks = callbacks;
+
+		// remove modifies the list which it is passed,
+		// removing all occurances of val.
+		function remove(list, val) {
+			for (var i = 0; i < list.length; i++) {
+				if (list[i] === val) {
+					list.splice(i, 1);
+				}
+			}
+		}
+
+		// Register a callback for the specified event. If the
+		// callback is already registered for the event, it is
+		// not added again.
+		self.on = function (ev, cb) {
+			var list = callbacks[ev] || [];
+			remove(list, cb);
+			list.push(cb);
+			callbacks[ev] = list;
+			return self;
+		}
+
+		// Remove a callback for the specified event. If the callback
+		// has not been registered, it does not do anything. If the
+		// second argument is undefined, it removes all handlers for
+		// the specified event.
+		self.off = function (ev, cb) {
+			if (cb === undefined) {
+				delete callbacks[ev];
+				return self;
+			}
+			var list = callbacks[ev];
+			if (!list) return self;
+			remove(list, cb);
+			return self;
+		}
+
+		// Fire an event, passing each registered handler all of
+		// the specified arguments. Within the handler, this is
+		// set to null.
+		self.fire = function (ev, arg1, arg2/*, ...*/) {
+			var list = callbacks[ev];
+			if (!list) return;
+			var args = Array.prototype.slice.call(arguments, 1);
+			for (var i = 0; i < list.length; i++) {
+				list[i].apply(null, args);
+			}
+			return self;
 		}
 	}
 

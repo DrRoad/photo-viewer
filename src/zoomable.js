@@ -6,7 +6,7 @@
 // contend for touch events and not conflict (at least, not too
 // badly). Photoviewer uses this to mediate touches
 // between zoomable and slideviewer.
-function Zoomable(viewport, element, parent) {
+PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 	if (viewport === undefined) {
 		throw "Zoomable requires a viewport element as it's first argument!";
 	}

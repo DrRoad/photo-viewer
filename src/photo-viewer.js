@@ -78,7 +78,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 	function PhotoViewer(page, urls, opts) {
 		var self = this;
 		var slideviewer;
-		var dispatcher = new Dispatcher();
+		var eventBus = new EventBus();
 		var content = page.querySelector('.app-content');
 		var topbar = page.querySelector('.app-topbar');
 		var title = page.querySelector('.app-title');
@@ -98,8 +98,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			}
 			return self;
 		}
-		self.on = dispatcher.on;
-		self.off = dispatcher.off;
+		self.on = eventBus.on;
+		self.off = eventBus.off;
 
 		function validateArgs() {
 			if (!page) throw "Page argument required!";
@@ -236,7 +236,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			// to the page.
 			replaceChildren(content, wrapper);
 
-			slideviewer = new SlideViewer(wrapper, source, {
+			slideviewer = new PhotoViewer._SlideViewer(wrapper, source, {
 				allowScroll: false,
 				length: urls.length,
 				startAt: opts.startAt,
@@ -249,9 +249,9 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				var wrap = elm.querySelector('div');
 				var img = elm.querySelector('img');
 				if (zoomable) zoomable.reset().destroy();
-				zoomable = new Zoomable(wrap, img, slideviewer);
+				zoomable = new PhotoViewer._Zoomable(wrap, img, slideviewer);
 
-				dispatcher.fire('flip', page);
+				eventBus.fire('flip', page);
 			});
 
 			if (App.platform == 'ios') {
@@ -335,6 +335,62 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			ws.width = cw + 'px';
 			ws.height = ch + 'px';
 			ws.top = -oh + 'px';
+		}
+	}
+
+	// http://github.com/crazy2be/EventBus.js
+	function EventBus() {
+		var self = this;
+		var callbacks = {};
+		self.callbacks = callbacks;
+
+		// remove modifies the list which it is passed,
+		// removing all occurances of val.
+		function remove(list, val) {
+			for (var i = 0; i < list.length; i++) {
+				if (list[i] === val) {
+					list.splice(i, 1);
+				}
+			}
+		}
+
+		// Register a callback for the specified event. If the
+		// callback is already registered for the event, it is
+		// not added again.
+		self.on = function (ev, cb) {
+			var list = callbacks[ev] || [];
+			remove(list, cb);
+			list.push(cb);
+			callbacks[ev] = list;
+			return self;
+		}
+
+		// Remove a callback for the specified event. If the callback
+		// has not been registered, it does not do anything. If the
+		// second argument is undefined, it removes all handlers for
+		// the specified event.
+		self.off = function (ev, cb) {
+			if (cb === undefined) {
+				delete callbacks[ev];
+				return self;
+			}
+			var list = callbacks[ev];
+			if (!list) return self;
+				   remove(list, cb);
+			return self;
+		}
+
+		// Fire an event, passing each registered handler all of
+		// the specified arguments. Within the handler, this is
+		// set to null.
+		self.fire = function (ev, arg1, arg2/*, ...*/) {
+			var list = callbacks[ev];
+			if (!list) return;
+				   var args = Array.prototype.slice.call(arguments, 1);
+			for (var i = 0; i < list.length; i++) {
+				list[i].apply(null, args);
+			}
+			return self;
 		}
 	}
 }(window.Zepto, window.jQuery, App));
