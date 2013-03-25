@@ -41,126 +41,131 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 	}
 
 	var touchy = Touchy(viewport, {
-		one: function (hand, finger) {
-			var prevX = finger.lastPoint.x;
-			var prevY = finger.lastPoint.y;
-
-			var maxX = findMaxX();
-			if (Math.abs(x) >= maxX) {
-				parent.enable();
-			}
-			boundXandY();
-
-			finger.on('move', function (point) {
-				prevTouchEnd = 0;
-				if (scale <= 1) return;
-
-						var dx = (point.x - prevX) / scale;
-				var dy = (point.y - prevY) / scale;
-				x += dx;
-				y += dy;
-
-				prevX = point.x;
-				prevY = point.y;
-
-				var maxX = findMaxX();
-				if (Math.abs(x) <= maxX) {
-					parent.disable();
-				} else if (parent.moving()) {
-					return;
-				}
-
-				setTransform(0);
-			});
-
-			finger.on('end', function (point) {
-				if (parent.moving()) {
-					boundXandY()
-					setTransform(300);
-					return;
-				}
-
-				var t = Date.now();
-				var diff = t - prevTouchEnd;
-				if (diff > 200) {
-					prevTouchEnd = t;
-
-					boundXandY();
-					setTransform(500);
-					return;
-				}
-
-				// Tap to zoom behaviour
-				if (scale <= 1) {
-					scale = 2;
-					var ic = sc2ic(finger.lastPoint);
-					x = ic.x;
-					y = ic.y;
-					boundXandY();
-					setTransform(500);
-				} else {
-					scale = 1;
-					x = 0;
-					y = 0;
-					setTransform(500);
-				}
-				prevTouchEnd = 0;
-				return;
-			});
-		},
-		two: function (hand, finger1, finger2) {
-			prevTouchEnd = 0;
-			if (parent.moving()) return;
-			parent.disable();
-
-			var p1 = finger1.lastPoint;
-			var p2 = finger2.lastPoint;
-
-			var prevDist = dist(p1, p2);
-			var startCenter = sc2ic(center(p1, p2));
-
-			hand.on('move', function (points) {
-				var p1 = points[0];
-				var p2 = points[1];
-
-				var newDist = dist(p1, p2);
-				scale *= newDist / prevDist;
-				prevDist = newDist;
-
-				// We try and keep the same center, in
-				// image coordinates, for the pinch
-				// as the user had when they started.
-				// This allows two finger panning, and a
-				// pleasent "zooms to your fingers"
-				// feeling.
-				var newCenter = sc2ic(center(p1, p2));
-				x += startCenter.x - newCenter.x;
-				y += startCenter.y - newCenter.y;
-
-				setTransform(0);
-			});
-
-			hand.on('end', function () {
-				var minZoom = 1;
-				var maxZoom = 4;
-				if (scale <= 1) {
-					parent.enable();
-				}
-				if (scale < minZoom) {
-					scale = minZoom;
-					x = 0;
-					y = 0;
-				}
-				if (scale > maxZoom) {
-					scale = maxZoom;
-				}
-				boundXandY();
-				setTransform(300);
-			});
-		},
+		one: one,
+		two: two,
 	});
+
 	self.reset();
 
+
+	function one(hand, finger) {
+		var prevX = finger.lastPoint.x;
+		var prevY = finger.lastPoint.y;
+
+		var maxX = findMaxX();
+		if (Math.abs(x) >= maxX) {
+			parent.enable();
+		}
+		boundXandY();
+
+		finger.on('move', function (point) {
+			prevTouchEnd = 0;
+			if (scale <= 1) return;
+
+			var dx = (point.x - prevX) / scale;
+			var dy = (point.y - prevY) / scale;
+			x += dx;
+			y += dy;
+
+			prevX = point.x;
+			prevY = point.y;
+
+			var maxX = findMaxX();
+			if (Math.abs(x) <= maxX) {
+				parent.disable();
+			} else if (parent.moving()) {
+				return;
+			}
+
+			setTransform(0);
+		});
+
+		finger.on('end', function (point) {
+			if (parent.moving()) {
+				boundXandY()
+				setTransform(300);
+				return;
+			}
+
+			var t = Date.now();
+			var diff = t - prevTouchEnd;
+			if (diff > 200) {
+				prevTouchEnd = t;
+
+				boundXandY();
+				setTransform(500);
+				return;
+			}
+
+			// Tap to zoom behaviour
+			if (scale <= 1) {
+				scale = 2;
+				var ic = sc2ic(finger.lastPoint);
+				x = ic.x;
+				y = ic.y;
+				boundXandY();
+				setTransform(500);
+			} else {
+				scale = 1;
+				x = 0;
+				y = 0;
+				setTransform(500);
+			}
+			prevTouchEnd = 0;
+			return;
+		});
+	}
+
+	function two(hand, finger1, finger2) {
+		prevTouchEnd = 0;
+		if (parent.moving()) return;
+		parent.disable();
+
+		var p1 = finger1.lastPoint;
+		var p2 = finger2.lastPoint;
+
+		var prevDist = dist(p1, p2);
+		var startCenter = sc2ic(center(p1, p2));
+
+		hand.on('move', function (points) {
+			var p1 = points[0];
+			var p2 = points[1];
+
+			var newDist = dist(p1, p2);
+			scale *= newDist / prevDist;
+			prevDist = newDist;
+
+			// We try and keep the same center, in
+			// image coordinates, for the pinch
+			// as the user had when they started.
+			// This allows two finger panning, and a
+			// pleasent "zooms to your fingers"
+			// feeling.
+			var newCenter = sc2ic(center(p1, p2));
+			x += startCenter.x - newCenter.x;
+			y += startCenter.y - newCenter.y;
+
+			setTransform(0);
+		});
+
+		hand.on('end', function () {
+			var minZoom = 1;
+			var maxZoom = 4;
+			if (scale <= 1) {
+				parent.enable();
+			}
+			if (scale < minZoom) {
+				scale = minZoom;
+				x = 0;
+				y = 0;
+			}
+			if (scale > maxZoom) {
+				scale = maxZoom;
+			}
+			boundXandY();
+			setTransform(300);
+		});
+	}
 
 	function dist(p1, p2) {
 		return Math.sqrt(

@@ -242,17 +242,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				startAt: opts.startAt,
 				bufferDist: 50,
 			});
-			var zoomable;
-			slideviewer.on('flip', function (page, elm) {
-				updateTitle(page, urls.length);
-
-				var wrap = elm.querySelector('div');
-				var img = elm.querySelector('img');
-				if (zoomable) zoomable.reset().destroy();
-				zoomable = new PhotoViewer._Zoomable(wrap, img, slideviewer);
-
-				eventBus.fire('flip', page);
-			});
+			slideviewer.on('flip', onFlip);
+			onFlip(opts.startAt, slideviewer.curMaster());
 
 			if (App.platform == 'ios') {
 				slideviewer.on('move', hideTitleBar);
@@ -301,6 +292,18 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				};
 				wrap.appendChild(img);
 				return wrap;
+			}
+
+			var zoomable;
+			function onFlip(page, elm) {
+				updateTitle(page, urls.length);
+
+				var wrap = elm.querySelector('div');
+				var img = elm.querySelector('img');
+				if (zoomable) zoomable.reset().destroy();
+				zoomable = new PhotoViewer._Zoomable(wrap, img, slideviewer);
+
+				eventBus.fire('flip', page);
 			}
 		}
 
