@@ -735,38 +735,5 @@
 
 
 	/* Publicise object */
-	window.Touchy = Touchy;
-
-	if (clik) {
-		clik.plugin('touchy', function () {
-			Touchy.apply(window, arguments);
-		});
-	}
-
-	if (Zepto) {
-		Zepto.extend(Zepto.fn, {
-			touchy : function () {
-				var args = Array.prototype.slice.call(arguments);
-
-				this.forEach(function (elem) {
-					var thisArgs = args.slice();
-					thisArgs.unshift(this);
-					Touchy.apply(window, thisArgs);
-				});
-				return this;
-			}
-		});
-	}
-
-	if (jQuery) {
-		jQuery.fn.touchy = function () {
-			var args = Array.prototype.slice.call(arguments);
-
-			this.each(function () {
-				var thisArgs = args.slice();
-				thisArgs.unshift(this);
-				Touchy.apply(window, thisArgs);
-			});
-		};
-	}
+	PhotoViewer._Touchy = Touchy;
 })(window, document, window.clik, window.Zepto, window.jQuery);

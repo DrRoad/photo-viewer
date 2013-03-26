@@ -40,7 +40,7 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 		return self;
 	}
 
-	var touchy = Touchy(viewport, {
+	var touchy = PhotoViewer._Touchy(viewport, {
 		one: one,
 		two: two,
 	});
