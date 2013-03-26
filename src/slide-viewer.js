@@ -223,7 +223,8 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			setPos(xPos);
 		}
 
-		function setPos(x) {
+		function setPos(x, cb) {
+			var unchanged = x === xPos;
 			var transform = prefixStyle('transform');
 			xPos = x;
 			// translateZ(0) does not affect our appearance, but hints to the
@@ -237,24 +238,21 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 				slider.style[transform] = '';
 				slider.style.left = x + 'px';
 			}
+
+			if (cb) {
+				if (unchanged || !supportsTransitions) {
+					// We don't get a transitionEnd event if
+					// 1) The animated property is unchanged, or
+					// 2) The browser doesn't support transitions (duh)
+					cb();
+				} else {
+					inputhandler.on('transitionEnd', cb);
+				}
+			}
 		}
 
 		function setTransitionDuration(t, cb) {
 			slider.style[prefixStyle('transitionDuration')] = t + 'ms';
-			if (cb) {
-				var eventHandled = false;
-				function handler() {
-					if (eventHandled) return;
-					eventHandled = true;
-					cb();
-				}
-				inputhandler.on('transitionEnd', handler);
-				// Some Android phones will never fire the transitionEnd
-				// event, so we assume that it has happened if at least
-				// twice the time required for the transition has passed.
-				// (See issue #7).
-				setTimeout(handler, t * 2);
-			}
 		}
 
 		var startedMoving = false;
@@ -323,17 +321,10 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 
 				if (dist < snapThreshold) {
 					var time = Math.floor(300 * dist / snapThreshold);
-					setTransitionDuration(time, onTransitionEnd);
+					setTransitionDuration(time);
 
 					newX = -page * pageWidth;
-					if (newX == xPos) {
-						// Many browsers don't give us the transitionEnd event if the
-						// start and end states of the transition are the same. Thus,
-						// we just fire it immediately.
-						onTransitionEnd();
-					} else {
-						setPos(newX);
-					}
+					setPos(newX, onTransitionEnd);
 					return;
 				}
 
@@ -345,10 +336,10 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 
 				newX = -page * pageWidth;
 
-				var time = Math.floor(500 * Math.abs(xPos - newX) / pageWidth);
-				setTransitionDuration(time, onTransitionEnd);
+				var time = Math.floor(200 * Math.abs(xPos - newX) / pageWidth);
+				setTransitionDuration(time);
 
-				setPos(newX);
+				setPos(newX, onTransitionEnd);
 			}
 
 			function onEndNoMove() {
@@ -579,13 +570,18 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 		}
 	}
 
+	var supportsTransitions = false;
 	var vendor = (function () {
 		var dummyStyle = document.createElement('div').style;
-		var vendors = 't,webkitT,MozT,msT,OT'.split(',');
+		var vendors = 'webkitT,MozT,msT,OT,t'.split(',');
 
 		for (var i = 0; i < vendors.length; i++) {
-			var t = vendors[i] + 'ransform';
-			if (t in dummyStyle) {
+			var transform  = vendors[i] + 'ransform';
+			var transition = vendors[i] + 'ransition';
+			if (transition in dummyStyle) {
+				supportsTransitions = true;
+			}
+			if (transform in dummyStyle) {
 				return vendors[i].substr(0, vendors[i].length - 1);
 			}
 		}
