@@ -21,12 +21,10 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 		bufferDist: 10,
 	}
 
-	// Wrapper is an element which will contain the
-	// slideviewer. It should have an explict height
-	// (and width, if not display: block) set.
-	// Source is a generator function. Given a page
-	// index, it should return an element to use
-	// as the slide for that page index.
+	// Wrapper is an element which will contain the slideviewer. It should
+	// have an explict height (and width, if not display: block) set.
+	// Source is a generator function. Given a page index, it should
+	// return an element to use as the slide for that page index.
 	function SlideViewer (wrapper, source, opts) {
 		var self = this;
 		var slider;
@@ -36,7 +34,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 		var minX = 0;
 		var snapThreshold = 0;
 		var pageWidth = 0;
-		var inputhandler = new InputHandler(vendor);
+		var inputhandler = new InputHandler();
 
 		if (!isElement(wrapper)) {
 			throw "SlideViewer first argument should be a DOM node which wraps the slider. Got " + wrapper;
@@ -379,71 +377,25 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 
 		init();
 	};
-	function Touch(domTouch) {
-		var self = this;
-		self.x = domTouch.pageX;
-		self.y = domTouch.pageY;
-		self.id = domTouch.identifier;
-	}
 
-	function Touchable(elm, opts) {
-		var self = this;
-
-		var listeners = [];
-		function attach(elm, ev, cb) {
-			listeners.push({elm: elm, ev: ev, cb: cb});
-			elm.addEventListener(ev, cb, false);
-		}
-
-		attach(elm, 'touchstart', onTouchStart);
-		attach(elm, 'touchmove', onTouchMove);
-		attach(elm, 'touchend', onTouchEnd);
-		attach(elm, 'touchcancel', onTouchEnd);
-
-		var fingers = [];
-		var numTouches = 0;
-		var currentHand;
-
-		function onTouchStart(ev) {
-			currentHand.fire('end');
-			numTouches++;
-			currentHand = new Hand(numTouches);
-		}
-
-		self.destroy = function () {
-			for (var i = 0; i < listeners.length; i++) {
-				var l = listeners[i];
-				l.elm.removeEventListener(l.ev, l.cb, false);
-			}
-		}
-
-		var eventBus = new EventBus();
-		self.on = eventBus.on;
-		self.off = eventBus.off;
-	}
-
-
-	function InputHandler(vendor) {
+	function InputHandler() {
 		var self = this;
 		var hasTouch = 'ontouchstart' in window;
+		var transitionEndMapping = {
+			''			: 'transitionend',
+			'webkit'	: 'webkitTransitionEnd',
+			'Moz'		: 'transitionend',
+			'O'			: 'oTransitionEnd',
+			'ms'		: 'MSTransitionEnd'
+		};
+
+		var transitionEndEvent = transitionEndMapping[vendor];
 		var resizeEvent = 'onorientationchange' in window ? 'orientationchange' : 'resize';
-		var startEvent = hasTouch ? 'touchstart' : 'mousedown';
-		var moveEvent = hasTouch ? 'touchmove' : 'mousemove';
-		var endEvent = hasTouch ? 'touchend' : 'mouseup';
+		var startEvent  = hasTouch ? 'touchstart'  : 'mousedown';
+		var moveEvent   = hasTouch ? 'touchmove'   : 'mousemove';
+		var endEvent    = hasTouch ? 'touchend'    : 'mouseup';
 		var cancelEvent = hasTouch ? 'touchcancel' : 'mouseout';
-		var transitionEndEvent = (function () {
-			if ( vendor === false ) return false;
 
-								  var transitionEnd = {
-									  ''			: 'transitionend',
-							'webkit'	: 'webkitTransitionEnd',
-							'Moz'		: 'transitionend',
-							'O'			: 'oTransitionEnd',
-							'ms'		: 'MSTransitionEnd'
-								  };
-
-								  return transitionEnd[vendor];
-		})();
 		var lastTouch;
 		var touchDisabled = false;
 
@@ -493,10 +445,10 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 
 				if (!lastTouch) return;
 
-				   var touch = findTouch(e.changedTouches, touchID);
+				var touch = findTouch(e.changedTouches, touchID);
 				if (!touch) touch = findTouch(e.touches, touchID);
 
-				   eventBus.fire('end', touch);
+				eventBus.fire('end', touch);
 				lastTouch = null;
 			}
 		}
@@ -511,28 +463,32 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			if (wrapper || slider) self.detach();
 			wrapper = newWrapper;
 			slider = newSlider;
+
 			window.addEventListener(resizeEvent, handleEvent, false);
-			wrapper.addEventListener(startEvent, handleEvent, false);
-			wrapper.addEventListener(moveEvent, handleEvent, false);
-			wrapper.addEventListener(endEvent, handleEvent, false);
-			wrapper.addEventListener(cancelEvent, handleEvent, false);
 			slider.addEventListener(transitionEndEvent, handleEvent, false);
+
+			wrapper.addEventListener(startEvent , handleEvent, false);
+			wrapper.addEventListener(moveEvent  , handleEvent, false);
+			wrapper.addEventListener(endEvent   , handleEvent, false);
+			wrapper.addEventListener(cancelEvent, handleEvent, false);
+
 			return self;
 		}
 
 		self.detach = function () {
 			window.removeEventListener(resizeEvent, handleEvent, false);
-			wrapper.removeEventListener(startEvent, handleEvent, false);
-			wrapper.removeEventListener(moveEvent, handleEvent, false);
-			wrapper.removeEventListener(endEvent, handleEvent, false);
-			wrapper.removeEventListener(cancelEvent, handleEvent, false);
 			slider.removeEventListener(transitionEndEvent, handleEvent, false);
+
+			wrapper.removeEventListener(startEvent , handleEvent, false);
+			wrapper.removeEventListener(moveEvent  , handleEvent, false);
+			wrapper.removeEventListener(endEvent   , handleEvent, false);
+			wrapper.removeEventListener(cancelEvent, handleEvent, false);
+
 			return self;
 		}
 
-		// If a touch is currently happening, simulates
-		// touchcancel. Prevents further touch events from
-		// being processed.
+		// If a touch is currently happening, simulates touchcancel.
+		// Prevents further touch events from being processed.
 		self.disableTouch = function () {
 			if (lastTouch) {
 				eventBus.fire('end', lastTouch);
@@ -541,8 +497,8 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			touchDisabled = true;
 		}
 
-		// Simulates a touchstart if a touch is currently
-		// in progress.
+		// Simulates a touchstart if a touch is currently in progress.
+		// Otherwise, enables the processing of future touches.
 		self.enableTouch = function () {
 			if (lastTouch) {
 				eventBus.fire('start', lastTouch);
