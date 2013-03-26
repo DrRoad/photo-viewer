@@ -80,6 +80,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var slideviewer;
 		var eventBus = new EventBus();
 		var content = page.querySelector('.app-content');
+		content.setAttribute("data-no-scroll", "true");
 		var topbar = page.querySelector('.app-topbar');
 		var title = page.querySelector('.app-title');
 

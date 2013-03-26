@@ -3,14 +3,14 @@
 PROJECT="photo-viewer"
 LICENSE="LICENSE.txt"
 MAJOR_VERSION="1"
-MINOR_VERSION="3"
+MINOR_VERSION="4"
 BUG_VERSION="0"
 AWS_BUCKET="cdn.kik.com"
 AWS_CFG="${HOME}/.s3cfg-kik"
 
 buildProject () {
-	buildJS "slide-viewer.js" "src/dispatcher.js src/slide-viewer.js"
-	buildJS "photo-viewer.js" "src/touchy.js src/dispatcher.js src/zoomable.js src/slide-viewer.js src/photo-viewer.js"
+	buildJS "slide-viewer.js" "src/slide-viewer.js"
+	buildJS "photo-viewer.js" "src/photo-viewer.js src/slide-viewer.js src/zoomable.js src/touchy.js"
 }
 
 
