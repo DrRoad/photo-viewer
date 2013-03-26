@@ -89,16 +89,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		wrapper.style.width = '100%';
 		wrapper.style.height = '100%';
 
-		self.setLoader = function (newLoadingElm) {
-			console.warn("PhotoViewer.setLoader() is depreciated! Use opts.loadingElm instead.");
-			loadingElm = newLoadingElm;
-			if (slideviewer) {
-				slideviewer.invalidate();
-			} else {
-				replaceChildren(content, loadingElm);
-			}
-			return self;
-		}
 		self.on = eventBus.on;
 		self.off = eventBus.off;
 
@@ -107,12 +97,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			if (!urls) throw "You gave me an empty list of urls, I can't do anything with that!";
 			if (!Array.isArray(urls)) {
 				throw "PhotoViewer setSource expects an array of photo URLs for a source, '" + newSource + "' given."
-			}
-			if (typeof opts === 'number') {
-				console.warn("Passing index as the third argument is depreciated! Use opts.startAt instead.");
-				var startAt = opts;
-				opts = arguments[3] || {};
-				opts.startAt = startAt;
 			}
 			opts = opts || {};
 			for (var o in defaultOpts) {

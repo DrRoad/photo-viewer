@@ -25,7 +25,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 	// have an explict height (and width, if not display: block) set.
 	// Source is a generator function. Given a page index, it should
 	// return an element to use as the slide for that page index.
-	function SlideViewer (wrapper, source, opts) {
+	function SlideViewer(wrapper, source, opts) {
 		var self = this;
 		var slider;
 		var masters = [];
@@ -36,24 +36,27 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 		var pageWidth = 0;
 		var inputhandler = new InputHandler();
 
-		if (!isElement(wrapper)) {
-			throw "SlideViewer first argument should be a DOM node which wraps the slider. Got " + wrapper;
-		}
-		if (typeof source !== 'function') {
-			throw "SlideViewer second argument should be a generator function!";
-		}
+		function validateArgs() {
+			if (!isElement(wrapper)) {
+				throw "SlideViewer first argument should be a DOM node which wraps the slider. Got " + wrapper;
+			}
+			if (typeof source !== 'function') {
+				throw "SlideViewer second argument should be a generator function!";
+			}
 
-		if (opts === undefined) opts = {};
-		for (var opt in defaultOpts) {
-			if (opts[opt] === undefined) {
-				opts[opt] = defaultOpts[opt];
+			opts = opts || {};
+			for (var opt in defaultOpts) {
+				if (opts[opt] === undefined) {
+					opts[opt] = defaultOpts[opt];
+				}
 			}
 		}
+		validateArgs();
 
 		var len = opts.length;
 		var page = opts.startAt;
 
-		function init () {
+		function init() {
 			wrapper.style.postition = 'relative';
 			wrapper.innerHTML = '';
 
@@ -220,7 +223,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			setPos(xPos);
 		}
 
-		function setPos (x) {
+		function setPos(x) {
 			var transform = prefixStyle('transform');
 			xPos = x;
 			// translateZ(0) does not affect our appearance, but hints to the
@@ -236,8 +239,22 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			}
 		}
 
-		function setTransitionDuration(t) {
+		function setTransitionDuration(t, cb) {
 			slider.style[prefixStyle('transitionDuration')] = t + 'ms';
+			if (cb) {
+				var eventHandled = false;
+				function handler() {
+					if (eventHandled) return;
+					eventHandled = true;
+					cb();
+				}
+				inputhandler.on('transitionEnd', handler);
+				// Some Android phones will never fire the transitionEnd
+				// event, so we assume that it has happened if at least
+				// twice the time required for the transition has passed.
+				// (See issue #7).
+				setTimeout(handler, t * 2);
+			}
 		}
 
 		var startedMoving = false;
@@ -296,7 +313,6 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			function onEnd(point) {
 				inputhandler.off('move');
 				inputhandler.off('end');
-				inputhandler.on('transitionEnd', onTransitionEnd);
 
 				prevX = point.pageX;
 				var deltaX = prevX - startX;
@@ -307,7 +323,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 
 				if (dist < snapThreshold) {
 					var time = Math.floor(300 * dist / snapThreshold);
-					setTransitionDuration(time);
+					setTransitionDuration(time, onTransitionEnd);
 
 					newX = -page * pageWidth;
 					if (newX == xPos) {
@@ -330,7 +346,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 				newX = -page * pageWidth;
 
 				var time = Math.floor(500 * Math.abs(xPos - newX) / pageWidth);
-				setTransitionDuration(time);
+				setTransitionDuration(time, onTransitionEnd);
 
 				setPos(newX);
 			}
@@ -341,7 +357,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 				inputhandler.on('start', onStart);
 			}
 
-			function onTransitionEnd(e) {
+			function onTransitionEnd() {
 				inputhandler.off('transitionEnd');
 				self.setPage(page);
 				inputhandler.on('start', onStart);
