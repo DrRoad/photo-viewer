@@ -262,21 +262,33 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				var img = document.createElement('img');
 				img.src = urls[i];
 
-				// Ensure the image is hardware accelerated immediately. This
-				// helps us avoid flicker and laggyness.
-				// Using webkitBackfaceVisibility instead of webkitTransform
-				// here causes strange invalidation issues on Android 4.2
-				// devices.
-				img.style.webkitTransform = 'translateZ(0)';
+				// Hack to get rid of flickering on images (iPhone bug) by
+				// forcing hardware acceleration. See
+				// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
+				img.style.webkitBackfaceVisibility = 'hidden';
 
+				// For desktop browsers
 				img.style.webkitUserSelect = 'none';
 				img.style.webkitUserDrag = 'none';
+
 				img.style.margin = '0 auto';
 				img.style.display = 'none';
+
 				img.onload = function () {
 					centerImage(wrap, img);
 					img.style.display = 'block';
 					wrap.removeChild(loading);
+
+					// This invalidates the area occupied by the image
+					// wrapper, and forces the browser to redraw it. Removing
+					// this will cause strange artifacts to remain in the
+					// background for android 4.2 devices.
+					setTimeout(function () {
+						ws.background = '#000';
+						setTimeout(function () {
+							ws.top = 'transparent';
+						}, 0);
+					}, 0);
 				};
 				wrap.appendChild(img);
 				return wrap;

@@ -190,7 +190,6 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 
 		var tr = 'translateX(' + tx + 'px) ' +
 		'translateY(' + ty + 'px) ' +
-		'translateZ(0)' +
 		'scale(' + ts + ',' + ts + ')';
 		var tp = t === 0 ? 'none' : 'all';
 		var td = r(t, 0) + 'ms';
