@@ -256,15 +256,18 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				ws.height = '100%';
 				ws.overflow = 'hidden';
 
-				var elm = opts.loadingElm.cloneNode(true /* deep copy */);
-				wrap.appendChild(elm);
+				var loading = opts.loadingElm.cloneNode(true /* deep copy */);
+				wrap.appendChild(loading);
 
 				var img = document.createElement('img');
 				img.src = urls[i];
-				// Hack to get rid of flickering on images
-				// (iPhone bug). See
-				// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
-				img.style.webkitBackfaceVisibility = 'hidden';
+
+				// Ensure the image is hardware accelerated immediately. This
+				// helps us avoid flicker and laggyness.
+				// Using webkitBackfaceVisibility instead of webkitTransform
+				// here causes strange invalidation issues on Android 4.2
+				// devices.
+				img.style.webkitTransform = 'translateZ(0)';
 
 				img.style.webkitUserSelect = 'none';
 				img.style.webkitUserDrag = 'none';
@@ -273,7 +276,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				img.onload = function () {
 					centerImage(wrap, img);
 					img.style.display = 'block';
-					elm.parentNode.removeChild(elm);
+					wrap.removeChild(loading);
 				};
 				wrap.appendChild(img);
 				return wrap;
@@ -285,6 +288,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 				var wrap = elm.querySelector('div');
 				var img = elm.querySelector('img');
+
 				if (zoomable) zoomable.reset().destroy();
 				zoomable = new PhotoViewer._Zoomable(wrap, img, slideviewer);
 

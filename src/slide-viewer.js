@@ -223,6 +223,13 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			setPos(xPos);
 		}
 
+		// Note that 3d is enabled by default. This should only be used in
+		// conjuction with the disable3d() method above.
+		self.enable3d = function () {
+			use3dAcceleration = true;
+			setPos(xPos);
+		}
+
 		function setPos(x, cb) {
 			var unchanged = x === xPos;
 			var transform = prefixStyle('transform');
