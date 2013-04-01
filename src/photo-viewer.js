@@ -32,46 +32,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 	};
 	return PhotoViewer;
 
-	function round(num, places) {
-		if (places === undefined) places = 0;
-
-		var factor = Math.pow(10, places);
-		return Math.round(num * factor) / factor;
-	}
-
-	function afterDOMLoad(func) {
-		if (window.cards && window.cards.ready) {
-			cards.ready(func);
-		} else {
-			setTimeout(func, 10);
-		}
-	}
-
-	function forEach(arr, func) {
-		for (var i = 0; i < arr.length; i++) {
-			func(arr[i], i);
-		}
-	}
-
-	// Removes all children of node, then adds
-	// newChild as a child.
-	function replaceChildren(node, newChild) {
-		while (node.firstChild) {
-			node.removeChild(node.firstChild);
-		}
-		node.appendChild(newChild);
-	}
-
-	function setTransition(elm, val) {
-		elm.style.transition = val;
-		elm.style.webkitTransition = '-webkit-' + val;
-	}
-
-	function setTransform(elm, val) {
-		elm.style.transform = val;
-		elm.style.webkitTransform = val;
-	}
-
 	// PhotoViewer takes over the content pane of your app screen.
 	// It wraps SlideViewer for the common case of simply displaying
 	// a set of photos in the content of your app.
@@ -255,6 +215,9 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				ws.width = '100%';
 				ws.height = '100%';
 				ws.overflow = 'hidden';
+				// Android 4.2 occasionally leaves behind artifacts if
+				// the wrapper has a transparent background.
+				ws.background = 'black';
 
 				var loading = opts.loadingElm.cloneNode(true /* deep copy */);
 				wrap.appendChild(loading);
@@ -278,17 +241,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					centerImage(wrap, img);
 					img.style.display = 'block';
 					wrap.removeChild(loading);
-
-					// This invalidates the area occupied by the image
-					// wrapper, and forces the browser to redraw it. Removing
-					// this will cause strange artifacts to remain in the
-					// background for android 4.2 devices.
-					setTimeout(function () {
-						ws.background = '#000';
-						setTimeout(function () {
-							ws.top = 'transparent';
-						}, 0);
-					}, 0);
 				};
 				wrap.appendChild(img);
 				return wrap;
@@ -396,5 +348,45 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			}
 			return self;
 		}
+	}
+
+	function round(num, places) {
+		if (places === undefined) places = 0;
+
+				   var factor = Math.pow(10, places);
+		return Math.round(num * factor) / factor;
+	}
+
+	function afterDOMLoad(func) {
+		if (window.cards && window.cards.ready) {
+			cards.ready(func);
+		} else {
+			setTimeout(func, 10);
+		}
+	}
+
+	function forEach(arr, func) {
+		for (var i = 0; i < arr.length; i++) {
+			func(arr[i], i);
+		}
+	}
+
+	// Removes all children of node, then adds
+	// newChild as a child.
+	function replaceChildren(node, newChild) {
+		while (node.firstChild) {
+			node.removeChild(node.firstChild);
+		}
+		node.appendChild(newChild);
+	}
+
+	function setTransition(elm, val) {
+		elm.style.transition = val;
+		elm.style.webkitTransition = '-webkit-' + val;
+	}
+
+	function setTransform(elm, val) {
+		elm.style.transform = val;
+		elm.style.webkitTransform = val;
 	}
 }(window.Zepto, window.jQuery, App));
