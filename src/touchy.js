@@ -8,7 +8,7 @@
 
 
 
-(function (window, document, clik, Zepto, jQuery) {
+!(function (window, document, clik, Zepto, jQuery) {
 	window = window || {};
 
 
@@ -736,4 +736,4 @@
 
 	/* Publicise object */
 	PhotoViewer._Touchy = Touchy;
-})(window, document, window.clik, window.Zepto, window.jQuery);
+}(window, document, window.clik, window.Zepto, window.jQuery));

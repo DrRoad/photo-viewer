@@ -246,4 +246,4 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 			y: y + (viewHalfY() - sc.y) / scale,
 		}
 	}
-}
+};

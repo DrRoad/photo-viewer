@@ -620,4 +620,4 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 	}
 
 	return SlideViewer;
-})(window.Zepto, window.jQuery);
+}(window.Zepto, window.jQuery));
