@@ -27,7 +27,7 @@ img {
 
 <script src="http://cdn.kik.com/cards/0/cards.js"></script>
 <script src="http://cdn.kik.com/app/1/app.js"></script>
-<script src="../src/dispatcher.js"></script>
+<script>var PhotoViewer = {}</script>
 <script src="../src/slide-viewer.js"></script>
 
 <script>
@@ -43,7 +43,7 @@ img {
 	}
 	App.populator('gozzip', function (page, data) {
 		var wrapper = page.querySelector('.wrapper');
-		var slideviewer = new SlideViewer(wrapper, source, {
+		var slideviewer = new PhotoViewer._SlideViewer(wrapper, source, {
 			startAt: parseInt(data.index, 10),
 		});
 
@@ -67,7 +67,7 @@ img {
 			content.innerText = 'Can you believe it???? He left that last one so quickly! She will be so upset! Imagnge the headrbreak#!';
 			article.appendChild(content);
 
-			Scrollable(article);
+			Scrollable(article, true);
 
 			return article;
 		}

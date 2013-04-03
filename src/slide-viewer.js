@@ -426,8 +426,10 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			var t = e.type;
 			if (t == resizeEvent) {
 				eventBus.fire('resize', e);
+				return;
 			} else if (t == transitionEndEvent) {
 				eventBus.fire('transitionEnd', e);
+				return;
 			}
 
 			if (touchDisabled) {
@@ -444,6 +446,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 				   lastTouch = e.changedTouches[0];
 				}
 				eventBus.fire('start', hasTouch ? e.changedTouches[0] : e);
+				e.preventDefault();
 			} else if (t == moveEvent) {
 				if (!hasTouch) {
 					eventBus.fire('move', e, e);
