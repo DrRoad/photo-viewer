@@ -185,8 +185,8 @@ PhotoViewer._Zoomable = function Zoomable(viewport, wrapper, element, parent) {
 			var multiplier = Math.pow(10, places);
 			return Math.round(num * multiplier) / multiplier;
 		};
-		var tx = r(-element.offsetWidth / 2 + x * scale, 2);
-		var ty = r(- element.offsetHeight / 2 + y * scale, 2);
+		var tx = r(x * scale, 2);
+		var ty = r(y * scale, 2);
 		var ts = r(scale, 2);
 
 		var ttranslate = ' translate(' + tx + 'px,' + ty + 'px)';

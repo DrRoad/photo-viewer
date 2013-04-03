@@ -239,7 +239,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				img.style.webkitUserSelect = 'none';
 				img.style.webkitUserDrag = 'none';
 
-				img.style.margin = '0 auto';
+// 				img.style.margin = '0 auto';
 				img.style.display = 'none';
 
 				img.onload = function () {
@@ -290,7 +290,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			var marginTop = round(Math.max((ch - h) / 2, 0));
 
 			var is = img.style;
-			is.marginTop = marginTop + 'px';
+// 			is.marginTop = marginTop + 'px';
 			is.width = w + 'px';
 			is.height = h + 'px';
 
