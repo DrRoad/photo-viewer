@@ -6,7 +6,7 @@
 // contend for touch events and not conflict (at least, not too
 // badly). Photoviewer uses this to mediate touches
 // between zoomable and slideviewer.
-PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
+PhotoViewer._Zoomable = function Zoomable(viewport, wrapper, element, parent) {
 	if (viewport === undefined) {
 		throw "Zoomable requires a viewport element as it's first argument!";
 	}
@@ -22,6 +22,7 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 			},
 		};
 	}
+
 	var self = this;
 	var prevTouchEnd = 0;
 	var x, y, scale;
@@ -184,20 +185,26 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 			var multiplier = Math.pow(10, places);
 			return Math.round(num * multiplier) / multiplier;
 		};
-		var tx = r(x * scale, 2);
-		var ty = r(y * scale, 2);
+		var tx = r(-element.offsetWidth / 2 + x * scale, 2);
+		var ty = r(- element.offsetHeight / 2 + y * scale, 2);
 		var ts = r(scale, 2);
 
-		var tr = 'translateX(' + tx + 'px) ' +
-		'translateY(' + ty + 'px) ' +
-		'scale(' + ts + ',' + ts + ')';
-		var tp = t === 0 ? 'none' : 'all';
-		var td = r(t, 0) + 'ms';
+		var ttranslate = ' translate(' + tx + 'px,' + ty + 'px)';
+		var tscale = ' scale(' + ts + ',' + ts + ')';
+		var property = t === 0 ? 'none' : '-webkit-transform';
+		var duration = r(t, 0) + 'ms';
+
+		var ws = wrapper.style;
+// 		ws.webkitTransitionProperty = property;
+// 		ws.webkitTransitionDuration = duration;
+// 		ws.webkitTransform = tscale;
 
 		var s = element.style;
-		s.webkitTransitionProperty = tp;
-		s.webkitTransitionDuration = td;
-		s.webkitTransform = tr;
+// 		s.webkitTransitionProperty = property;
+// 		s.webkitTransitionDuration = duration;
+// 		s.webkitTransform = innerTransform;
+		s.zoom = ts;
+		s.webkitTransform = ttranslate;
 	}
 	function viewHalfX() {
 		return viewport.offsetWidth / 2;

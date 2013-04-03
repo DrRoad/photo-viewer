@@ -118,7 +118,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				// Removing this on iOS causes
 				// flicker when transitioning
 				// away from the photo viewer.
-				img.style.webkitBackfaceVisibility = '';
+				img.style.webkitPerspective = '';
 			}
 			slideviewer.eachMaster(function (elm, page) {
 				if (page !== slideviewer.page()) {
@@ -188,6 +188,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				bufferDist: 50,
 			});
 			slideviewer.on('flip', onFlip);
+			slideviewer.disable3d();
 			onFlip(opts.startAt, slideviewer.curMaster());
 
 			if (App.platform == 'ios') {
@@ -222,13 +223,17 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				var loading = opts.loadingElm.cloneNode(true /* deep copy */);
 				wrap.appendChild(loading);
 
+				var imgwrap = document.createElement('div');
+				imgwrap.classList.add('imgwrap');
+// 				imgwrap.style.webkitTransformOrigin = "0% 0%";
+
 				var img = document.createElement('img');
 				img.src = urls[i];
 
 				// Hack to get rid of flickering on images (iPhone bug) by
 				// forcing hardware acceleration. See
 				// http://stackoverflow.com/questions/3461441/prevent-flicker-on-webkit-transition-of-webkit-transform
-				img.style.webkitBackfaceVisibility = 'hidden';
+				img.style.webkitPerspective = '500';
 
 				// For desktop browsers
 				img.style.webkitUserSelect = 'none';
@@ -242,7 +247,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 					img.style.display = 'block';
 					wrap.removeChild(loading);
 				};
-				wrap.appendChild(img);
+				imgwrap.appendChild(img);
+				wrap.appendChild(imgwrap);
 				return wrap;
 			}
 
@@ -252,9 +258,10 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 				var wrap = elm.querySelector('div');
 				var img = elm.querySelector('img');
+				var imgwrap = elm.querySelector('.imgwrap');
 
 				if (zoomable) zoomable.reset().destroy();
-				zoomable = new PhotoViewer._Zoomable(wrap, img, slideviewer);
+				zoomable = new PhotoViewer._Zoomable(wrap, imgwrap, img, slideviewer);
 
 				eventBus.fire('flip', page);
 			}
@@ -353,7 +360,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 	function round(num, places) {
 		if (places === undefined) places = 0;
 
-				   var factor = Math.pow(10, places);
+		var factor = Math.pow(10, places);
 		return Math.round(num * factor) / factor;
 	}
 
