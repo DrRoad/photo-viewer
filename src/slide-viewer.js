@@ -38,10 +38,10 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 
 		function validateArgs() {
 			if (!isElement(wrapper)) {
-				throw "SlideViewer first argument should be a DOM node which wraps the slider. Got " + wrapper;
+				throw TypeError("SlideViewer first argument should be a DOM node which wraps the slider. Got " + wrapper);
 			}
 			if (typeof source !== 'function') {
-				throw "SlideViewer second argument should be a generator function!";
+				throw TypeError("SlideViewer second argument should be a generator function!");
 			}
 
 			opts = opts || {};
@@ -119,7 +119,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 		var prevPage = -1;
 		self.setPage = function (newPage) {
 			if (typeof newPage !== 'number') {
-				throw "SlideViewer.setPage() requires a number! ('" + newPage + "' given)";
+				throw TypeError("SlideViewer.setPage() requires a number! ('" + newPage + "' given)");
 			}
 			function positionMasters(a, b, c) {
 				var m = masters;
@@ -178,7 +178,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			for (var i = 0; i < 3; i++) {
 				if (masters[i].page == page) return masters[i].elm;
 			}
-			throw "No master is displaying our current page. This is a bug! Current page: " + i + ", masters: " + JSON.serialize(masters);
+			throw Error("No master is displaying our current page. This is a bug! Current page: " + i + ", masters: " + JSON.serialize(masters));
 		}
 
 		self.eachMaster = function (cb) {
@@ -231,6 +231,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 		}
 
 		function setPos(x, cb) {
+// 			console.log("setting position to ", x);
 			var unchanged = x === xPos;
 			var transform = prefixStyle('transform');
 			xPos = x;
@@ -363,6 +364,7 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 		}
 
 		function getElement(i) {
+// 			err.stack;
 			function errorPage(customMessage) {
 				var err = document.createElement('p');
 				err.innerHTML = "There was an error creating this page! Contact the developer for more information..." + "<br><br>" + customMessage;

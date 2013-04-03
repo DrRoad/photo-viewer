@@ -8,10 +8,10 @@
 // between zoomable and slideviewer.
 PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 	if (viewport === undefined) {
-		throw "Zoomable requires a viewport element as it's first argument!";
+		throw TypeError("Zoomable requires a viewport element as it's first argument!");
 	}
 	if (element === undefined) {
-		throw "Zoomable requires a element to zoom as it's second argument!";
+		throw TypeError("Zoomable requires a element to zoom as it's second argument!");
 	}
 	if (parent === undefined) {
 		parent = {

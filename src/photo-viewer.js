@@ -53,10 +53,10 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		self.off = eventBus.off;
 
 		function validateArgs() {
-			if (!page) throw "Page argument required!";
-			if (!urls) throw "You gave me an empty list of urls, I can't do anything with that!";
+			if (!page) throw TypeError("Page argument required!");
+			if (!urls) throw TypeError("You gave me an empty list of urls, I can't do anything with that!");
 			if (!Array.isArray(urls)) {
-				throw "PhotoViewer setSource expects an array of photo URLs for a source, '" + newSource + "' given."
+				throw TypeError("PhotoViewer setSource expects an array of photo URLs for a source, '" + newSource + "' given.");
 			}
 			opts = opts || {};
 			for (var o in defaultOpts) {
