@@ -41,6 +41,15 @@ img {
 	function mod(a, b) {
 		return ((a % b) + b) % b
 	}
+	function needsPreventDefaultHack() {
+		var match = /\bAndroid (\d+(\.\d+)?)/.exec(navigator.userAgent);
+		if (!match) return false;
+
+		version = parseFloat(match[1]);
+		if (version >= 4.1) return false;
+
+		return true;
+	}
 	App.populator('gozzip', function (page, data) {
 		var wrapper = page.querySelector('.wrapper');
 		var slideviewer = new PhotoViewer._SlideViewer(wrapper, source, {
@@ -67,7 +76,7 @@ img {
 			content.innerText = 'Can you believe it???? He left that last one so quickly! She will be so upset! Imagnge the headrbreak#!';
 			article.appendChild(content);
 
-			Scrollable(article, true);
+			Scrollable(article, needsPreventDefaultHack());
 
 			return article;
 		}

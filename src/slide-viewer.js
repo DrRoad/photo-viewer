@@ -422,6 +422,16 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			return null;
 		}
 
+		var needsPreventDefaultHack = (function needsPreventDefaultHack() {
+			var match = /\bAndroid (\d+(\.\d+)?)/.exec(navigator.userAgent);
+			if (!match) return false;
+
+			version = parseFloat(match[1]);
+			if (version >= 4.1) return false;
+
+			return true;
+		}());
+
 		function handleEvent(e) {
 			var t = e.type;
 			if (t == resizeEvent) {
@@ -430,6 +440,13 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 			} else if (t == transitionEndEvent) {
 				eventBus.fire('transitionEnd', e);
 				return;
+			}
+
+			if ((t === startEvent || t === moveEvent) && needsPreventDefaultHack) {
+				// Kills native scrolling, but lets our slider work properly.
+				// See http://code.google.com/p/android/issues/detail?id=19827
+				// and http://code.google.com/p/android/issues/detail?id=5491
+				e.preventDefault();
 			}
 
 			if (touchDisabled) {
@@ -446,7 +463,6 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 				   lastTouch = e.changedTouches[0];
 				}
 				eventBus.fire('start', hasTouch ? e.changedTouches[0] : e);
-				e.preventDefault();
 			} else if (t == moveEvent) {
 				if (!hasTouch) {
 					eventBus.fire('move', e, e);
