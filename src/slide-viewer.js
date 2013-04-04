@@ -138,9 +138,9 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 				if (page === len - 1) sc.visibility = 'hidden';
 				else sc.visibility = 'visible';
 
-				m[a].newPage = page === 0 ? len - 1 : page - 1;
+				m[a].newPage = page - 1;
 				m[b].newPage = page;
-				m[c].newPage = page === len - 1 ? 0 : page + 1;
+				m[c].newPage = page + 1;
 			}
 			page = clamp(newPage, 0, len - 1);
 			setTransitionDuration(0);
