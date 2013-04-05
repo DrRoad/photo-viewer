@@ -19,6 +19,12 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 		// have to move their fingers before we interpret their
 		// action?
 		bufferDist: 10,
+		// What should we show to the user when the generator threw
+		// an error or returned an invalid output? You can override
+		// this when shipping your application, so that in the event
+		// something does go wrong in your code, you can show a
+		// friendlier error page.
+		errorGenerator: defaultErrorGenerator,
 	}
 
 	// Wrapper is an element which will contain the slideviewer. It should
@@ -364,18 +370,13 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 		}
 
 		function getElement(i) {
-// 			err.stack;
-			function errorPage(customMessage) {
-				var err = document.createElement('p');
-				err.innerHTML = "There was an error creating this page! Contact the developer for more information..." + "<br><br>" + customMessage;
-				return err;
-			}
-
-			var element = null;
+			var element;
 			try {
 				element = source(i);
 			} catch (e) {
-				return errorPage("Exception returned from source() function with input " + i + ". Message: " + e);
+				var err = Error("Exception returned from source() function with input " + i + ". Message: " + e.message);
+				err.original = e;
+				return opts.errorGenerator(err);
 			}
 
 			// In case they return us a zepto or jQuery
@@ -384,11 +385,12 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 				element = element[0];
 			}
 
-			if (isElement(element)) {
-				return element;
-			} else {
-				return errorPage("Invalid type returned from source() function. Got type " + typeof element + " (with value " + element + "), expected string or node. Input was " + i);
+			if (!isElement(element)) {
+				var err = TypeError("Invalid type returned from source() function. Got type " + typeof element + " (with value " + element + "), expected HTMLElement. Input was " + i);
+				return opts.errorGenerator(err);
 			}
+
+			return element;
 		}
 
 		init();
@@ -403,6 +405,23 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 
 		return true;
 	}());
+
+	function defaultErrorGenerator(err) {
+		if (window.console && console.error) {
+			if (err.original) {
+				console.error(err.original);
+				console.log(err.original.stack);
+			} else {
+				console.error(err);
+				console.log(err.stack);
+			}
+		}
+		var elm = document.createElement('p');
+		elm.innerHTML = "There was an error creating this page! Contact the developer for more information." +
+			"<br><br>" + err.message + "<br><br>" +
+			"If you are the developer, this means you made a mistake in your source() function. If you want to ensure users never see this page, you can override opts.errorGenerator to generate a more user-friendly error page.";
+		return elm;
+	}
 
 	function InputHandler() {
 		var self = this;
