@@ -45,7 +45,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var topbar = page.querySelector('.app-topbar');
 		var title = page.querySelector('.app-title');
 
-		var topbarCover = document.createElement('div');
+		var topbarVisible = true;
 		var wrapper = document.createElement('div');
 		wrapper.style.width = '100%';
 		wrapper.style.height = '100%';
@@ -136,29 +136,28 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 
 
 		function toggleTitleBar() {
-			if (topbarCover.style.visibility == '') {
-				showTitleBar();
-			} else {
-				hideTitleBar();
-			}
+			if (topbarVisible) showTitleBar();
+			else hideTitleBar();
 		}
 
 		function showTitleBar() {
 			if (App.platform == 'ios') {
 				topbar.style.opacity = '1';
+				topbar.style.pointerEvents = '';
 			} else {
 				setTransform(topbar, '');
 			}
-			topbarCover.style.visibility = 'hidden';
+			topbarVisible = false;
 		}
 
 		function hideTitleBar() {
 			if (App.platform == 'ios') {
 				topbar.style.opacity = '0';
+				topbar.style.pointerEvents = 'none';
 			} else {
 				setTransform(topbar, 'translate3d(0, -100%, 0)');
 			}
-			topbarCover.style.visibility = '';
+			topbarVisible = true;
 		}
 
 		function updateTitle(i, len) {
@@ -173,7 +172,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			} else {
 				setTransition(topbar, 'transform 0.5s ease-in-out 200ms');
 			}
-			topbarCover.addEventListener("touchstart", showTitleBar, false);
 
 			// We don't want to have the slideview in the page when we
 			// are transitioning in, as having a 3d transform within a
@@ -194,18 +192,6 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			if (App.platform == 'ios') {
 				slideviewer.on('move', hideTitleBar);
 			}
-
-			// A bit of a hack, but this allows us to capture taps
-			// anywhere on the screen, including on the titlebar.
-			var cs = topbarCover.style;
-			cs.position = "absolute";
-			cs.top = topbar.offsetTop + 'px';
-			cs.left = topbar.offsetLeft + 'px';
-			cs.width = topbar.offsetWidth + 'px';
-			cs.height = topbar.offsetHeight + 'px';
-			cs.opacity = "0";
-			cs.visibility = "hidden";
-			page.appendChild(topbarCover);
 
 			function source(i) {
 				var wrap = document.createElement('div')
