@@ -1,9 +1,25 @@
-photo-viewer.js - Look Ma! I built you a photo gallery!
-=======================================================
+PhotoViewer
+===========
 
-Simply the fastest, smoothest, easiest photo viewer library. Designed to work with [App.js](http://code.kik.com/photo-viewer/demos/basic.html). Take a look at the [Demo](http://code.kik.com/photo-viewer/demos/index.html)!
+"Smoother than native"
 
-__Download__ (minified): [photo-viewer.js v1](http://cdn.kik.com/photo-viewer/1/photo-viewer.js)
+PhotoViewer is an aggressively optimized and thouroghly tested photo viewer
+library for [App.js](https://github.com/kikinteractive/app).
+It works across all modern browsers, including Android 2.1 and iOS 5.
+
+Don't believe us? Try the demo (preferably on your phone, it's easy to be
+smooth on desktop): http://code.kik.com/photo-viewer/demos/index.html
+
+Why is it smoother than the competition? A deep understanding of how modern
+browsers work under the hood allowed us to take full advantage of the
+capabilities of the modern browser. On recent iOS and Android devices, we
+put the slider in it's own 3d layer, computed once and stored as a texture
+on the GPU. This effectively means that every move can be optimized by the
+browser to nothing more than a (fast!) OpenGL call to change the texture
+coordinates. Even on older phones, we move the slider without a reflow,
+requiring only a repaint to update the screen.
+
+Ready for smooth? __Download__ (minified): [photo-viewer.js](http://cdn.kik.com/photo-viewer/1/photo-viewer.js)
 
 
 Usage
@@ -20,35 +36,22 @@ You can listen to events:
 	photoViewer.on('flip', function (page) {
 		data.index = page;
 		App.saveStack();
-	}
+	});
 
 And customize the options to your needs:
 
 	var photoViewer = new PhotoViewer(page, urls, {
-		// Setting this to false (true is the default) tells
-		// PhotoViewer not to mess with your page's title.
-		// By default, PhotoViewer will automatically change
-		// the title as the user swipes through the list,
-		// in order to reflect their position in the queue.
+		// Automatically update the page title as the user swipes through
+		// photos?
 		automaticTitles: true,
-
-		// Setting this to false (true is the default) tells
-		// PhotoViewer not to hide the title bar when the user
-		// taps or swipes (depending on platform).
-		// It also makes images vertically centered relative
-		// to only the app content, rather than the whole page.
+		// Hide the titlebar automatically, using whichever gestures are
+		// recognized on the device's native photo viewer.
 		autoHideTitle: true,
-
-		// Setting this option allows you to customize the
-		// loading screen to fit the theme of your application.
-		// myLoadingElement is any html element, from the DOM
-		// or hand crafted. A duplicate is made each time it
-		// is used.
-		loadingElm: myLoadingElement,
-
-		// Setting this option allows you to start the viewer
-		// on an image other than the first image.
-		startAt: 4,
+		// An element used as a placeholder while photos are loading.
+		// A duplicate is made each time it is used.
+		loadingElm: defaultLoadingElm,
+		// Photo index to start at.
+		startAt: 0,
 	});
 
 A complete example of a typical PhotoViewer user:
@@ -62,31 +65,7 @@ A complete example of a typical PhotoViewer user:
 			App.saveStack();
 		});
 	});
-
-Notes
------
-
-Your content needs to be non-scrollable for this to work. Scrollable's hacks interfere with our positioning.
-
-	<div class="app-content" data-no-scroll="true"></div>
-
-
-<!---
-slide-viewer.js - An Essential Part of a Slick, Smooth, and Slidy Mobile UI
-===========================================================================
-// TODO
-[slide-viewer.js v1](http://cdn.kik.com/photo-viewer/1/slide-viewer.js)
-
-Usage with ZeptoJS or jQuery
-----------------------------
-
-//TODO
-
-
-
-
-Standalone Usage
-----------------
-
-//TODO
--->
+	App.load('viewer', {
+		urls: ['funny-cat-picture.jpg', 'funny-lolcat.jpg'],
+		index: 1,
+	});
