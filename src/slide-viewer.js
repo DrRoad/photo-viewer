@@ -167,7 +167,9 @@ PhotoViewer._SlideViewer = (function (Zepto, jQuery) {
 				if (m.newPage == m.page) continue;
 
 				m.elm.innerHTML = '';
-				m.elm.appendChild(getElement(m.newPage));
+				if (m.newPage >= 0 && m.newPage < opts.length) {
+					m.elm.appendChild(getElement(m.newPage));
+				}
 
 				m.page = m.newPage;
 			}

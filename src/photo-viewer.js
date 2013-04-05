@@ -25,10 +25,17 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 	}());
 
 	var defaultOpts = {
-		startAt: 0,
+		// Automatically update the page title as the user swipes through
+		// photos?
 		automaticTitles: true,
+		// Hide the titlebar automatically, using whichever gestures are
+		// recognized on the device's native photo viewer.
 		autoHideTitle: true,
+		// An element used as a placeholder while photos are loading.
+		// A duplicate is made each time it is used.
 		loadingElm: defaultLoadingElm,
+		// Photo index to start at.
+		startAt: 0,
 	};
 
 	return PhotoViewer;
