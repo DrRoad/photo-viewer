@@ -34,7 +34,7 @@ For basic usage, just give the PhotoViewer your page, and some urls to munch on:
 
 	App.populator('viewer', function (page, data) {
 		var photoViewer = new PhotoViewer(page, data.urls);
-	}
+	});
 
 You can listen to events:
 
