@@ -19,6 +19,11 @@ browser to nothing more than a (fast!) OpenGL call to change the texture
 coordinates. Even on older phones, we move the slider without a reflow,
 requiring only a repaint to update the screen.
 
+PhotoViewer is suitable for photo galleries of any size, as long as the list
+of photo URLs can fit within the memory of the browser. Under the hood, it
+only ever handles a maximum of three photos at once, meaning you get super
+fast performance regardless of how large your album is.
+
 Ready for smooth? __Download__ (minified): [photo-viewer.js](http://cdn.kik.com/photo-viewer/1/photo-viewer.js)
 
 
