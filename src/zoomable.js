@@ -22,6 +22,7 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 			},
 		};
 	}
+
 	var self = this;
 	var prevTouchEnd = 0;
 	var x, y, scale;
@@ -247,3 +248,13 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 		}
 	}
 };
+
+PhotoViewer._Zoomable.deviceSupported = (function () {
+	var match = /\bAndroid (\d+(\.\d+)?)/.exec(navigator.userAgent);
+	if (!match) return true;
+
+	var version = parseFloat(match[1]);
+	if (version > 3.0) return true;
+
+	return false;
+}());
