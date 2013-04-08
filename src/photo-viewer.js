@@ -120,8 +120,8 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			if (!slideviewer) return;
 
 			slideviewer.disable3d();
+			var elm = slideviewer.curMaster();
 			if (App.platform !== 'ios') {
-				var elm = slideviewer.curMaster();
 				var img = elm.querySelector('img');
 				// Removing this on iOS causes
 				// flicker when transitioning
@@ -134,11 +134,15 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 				}
 			});
 
-			// This clips the image under the titlebar, but
-			// removing it causes strange flickers on android,
-			// and the image to spill over into neighbouring
-			// screens on iOS.
-			content.style.overflow = 'hidden';
+			if (App.platform === 'android') {
+				// This clips the image under the titlebar, but is the only
+				// way we can seem to avoid flicker when transitioning away
+				// from an image on Android.
+				content.style.overflow = 'hidden';
+			} else {
+				var wrap = elm.querySelector('div');
+				wrap.style.overflow = 'hidden';
+			}
 		}
 
 
