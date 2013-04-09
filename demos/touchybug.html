@@ -3,27 +3,36 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-html, body, .example {
+* {
 	height: 100%;
 	padding: 0px;
 	margin: 0px;
 	-webkit-box-sizing: border-box;
 }
-.example {
+.view {
 	border: 2px solid black;
-	-webkit-transform: translate3d(0px, 0px, 0px);
+}
+.zoomed {
+	-webkit-backface-visibility: hidden;
+	border: 2px solid green;
 }
 </style>
 </head>
 <body>
-<div class="example"></div>
+<div class="view">
+	<div class="zoomed"></div>
+</div>
 <script src="http://cdn.kik.com/cards/0/cards.js"></script>
 <script src="/zerver/require.js"></script>
 <script>PhotoViewer = {};</script>
 <script src="../src/touchy.js"></script>
+<script src="../src/zoomable.js"></script>
 <script>
-var example = document.querySelector('.example');
-var touchy = PhotoViewer._Touchy(example, {
+var view = document.querySelector('.view');
+var zoomed = document.querySelector('.zoomed');
+var zoomable = new PhotoViewer._Zoomable(view, zoomed);
+
+var touchy = PhotoViewer._Touchy(view, {
 	one: one,
 	two: two,
 });
@@ -32,9 +41,9 @@ function one(hand, finger1) {
 	hand.on('move', function (points) {
 		var p = points[0];
 		println("	Got touchy (1) touchmove:", p);
-		var x = p.x - window.innerWidth/2;
-		var y = p.y - window.innerHeight/2;
-		example.style.webkitTransform = 'translate3d(' + x + 'px,' + y + 'px,0px)';
+// 		var x = p.x - window.innerWidth/2;
+// 		var y = p.y - window.innerHeight/2;
+// 		view.style.webkitTransform = 'translate3d(' + x + 'px,' + y + 'px,0px)';
 	});
 	hand.on('end', function () {
 		println("Got touchy (1) touchend");
@@ -50,9 +59,9 @@ function two(hand, finger1, finger2) {
 	});
 }
 
-example.addEventListener('touchstart', debugPrint);
-example.addEventListener('touchmove' , debugPrint);
-example.addEventListener('touchend'  , debugPrint);
+view.addEventListener('touchstart', debugPrint);
+view.addEventListener('touchmove' , debugPrint);
+view.addEventListener('touchend'  , debugPrint);
 function debugPrint(e) {
 	var t = e.type;
 	var buf = '';
