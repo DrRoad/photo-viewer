@@ -129,9 +129,8 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 		var startCenter = sc2ic(center(p1, p2));
 
 		hand.on('move', function (points) {
-			var p1 = points[0];
-			var p2 = points[1];
-
+			var p1 = finger1.lastPoint;
+			var p2 = finger2.lastPoint;
 			var newDist = dist(p1, p2);
 			scale *= newDist / prevDist;
 			prevDist = newDist;

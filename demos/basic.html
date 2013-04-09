@@ -77,16 +77,11 @@ body {
 				}
 			})
 
-			var images = [
-				'http://theosophical.files.wordpress.com/2011/06/zero2.jpg',
-				'http://2.bp.blogspot.com/-pi1jelOHWAA/UJ0rN3F0M-I/AAAAAAAAANE/nqbgpZjIbFk/s1600/edit(27117).png',
-				'http://www.underdogmillionaire.com/blog/wp-content/uploads/2011/04/2-steps-to-get-rich.png',
-				'http://www.techdigest.tv/three-logo-thumb.jpg',
-				'http://us.123rf.com/400wm/400/400/virinka/virinka1112/virinka111200409/11659584-cartoon-number-five.jpg',
-				'https://twimg0-a.akamaihd.net/profile_images/1839102782/High_Six_logo.jpg',
-				'http://mwafrica.files.wordpress.com/2008/11/seven-logo-large1.jpg',
-				'http://longlivejudyism.files.wordpress.com/2010/11/eight-ball.jpg',
-			];
+			var images = [];
+			for (var i = 0; i < 10; i++) {
+				var url = 'photos/' + i + '.jpg';
+				images.push(url);
+			}
 
 			try {
 				App.restore();
