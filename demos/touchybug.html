@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+html, body, .example {
+	height: 100%;
+	padding: 0px;
+	margin: 0px;
+	-webkit-box-sizing: border-box;
+}
+.example {
+	border: 2px solid black;
+	-webkit-transform: translate3d(0px, 0px, 0px);
+}
+</style>
+</head>
+<body>
+<div class="example"></div>
+<script src="http://cdn.kik.com/cards/0/cards.js"></script>
+<script src="/zerver/require.js"></script>
+<script>PhotoViewer = {};</script>
+<script src="../src/touchy.js"></script>
+<script>
+var example = document.querySelector('.example');
+var touchy = PhotoViewer._Touchy(example, {
+	one: one,
+	two: two,
+});
+function one(hand, finger1) {
+		println("Got touchy (1) touchstart:", finger1.lastPoint);
+	hand.on('move', function (points) {
+		var p = points[0];
+		println("	Got touchy (1) touchmove:", p);
+		var x = p.x - window.innerWidth/2;
+		var y = p.y - window.innerHeight/2;
+		example.style.webkitTransform = 'translate3d(' + x + 'px,' + y + 'px,0px)';
+	});
+	hand.on('end', function () {
+		println("Got touchy (1) touchend");
+	});
+}
+function two(hand, finger1, finger2) {
+		println("Got touchy (2) touchstart:", finger1.lastPoint, finger2.lastPoint);
+	hand.on('move', function () {
+		println("	Got touchy (2) touchmove:", finger1.lastPoint, finger2.lastPoint);
+	});
+	hand.on('end', function () {
+		println("Got touchy (2) touchend");
+	});
+}
+
+example.addEventListener('touchstart', debugPrint);
+example.addEventListener('touchmove' , debugPrint);
+example.addEventListener('touchend'  , debugPrint);
+function debugPrint(e) {
+	var t = e.type;
+	var buf = '';
+	if (t === 'touchmove') buf = '	';
+	println(buf + "Got touch (", e.touches.length, "):", e.type, "(",
+		e.changedTouches.length, "changedTouches).");
+}
+
+function println() {
+	var str = "";
+	var args = Array.prototype.slice.apply(arguments);
+	for (var i = 0; i < args.length; i++) {
+		var arg = args[i];
+		if (typeof arg === 'string') {
+			str += arg;
+		} else {
+			str += JSON.stringify(arg);
+		}
+		str += " "
+	}
+	console.log(str);
+}
+</script>
+</body>
+</html>
