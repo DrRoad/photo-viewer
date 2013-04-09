@@ -45,6 +45,12 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 		one: one,
 		two: two,
 	});
+	viewport.addEventListener('touchstart', debugPrint, false);
+	viewport.addEventListener('touchmove' , debugPrint, false);
+	viewport.addEventListener('touchend'  , debugPrint, false);
+	function debugPrint(e) {
+		console.log("Got touch event of type " + e.type + " with touches length " + e.touches.length + " and changedTouches length " + e.changedTouches.length);
+	}
 
 	self.reset();
 
@@ -60,6 +66,7 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 		boundXandY();
 
 		finger.on('move', function (point) {
+			console.log("Touch at " + point.x + "," + point.y);
 			prevTouchEnd = 0;
 			if (scale <= 1) return;
 
@@ -124,13 +131,15 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 
 		var p1 = finger1.lastPoint;
 		var p2 = finger2.lastPoint;
+		console.log("Touchstart: " + JSON.stringify(p1) + " " + JSON.stringify(p2));
 
 		var prevDist = dist(p1, p2);
 		var startCenter = sc2ic(center(p1, p2));
 
-		hand.on('move', function (points) {
-			var p1 = points[0];
-			var p2 = points[1];
+		hand.on('move', function () {
+			var p1 = finger1.lastPoint;
+			var p2 = finger2.lastPoint;
+			console.log("Touchmove: " + JSON.stringify(p1) + " " + JSON.stringify(p2));
 
 			var newDist = dist(p1, p2);
 			scale *= newDist / prevDist;
