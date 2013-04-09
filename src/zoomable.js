@@ -125,8 +125,10 @@ PhotoViewer._Zoomable = function Zoomable(viewport, element, parent) {
 	}
 
 	function two(hand, finger1, finger2) {
+		console.log("Touchstart!!!");
 		prevTouchEnd = 0;
 		if (parent.moving()) return;
+		console.log("Disabling parent!!!");
 		parent.disable();
 
 		var p1 = finger1.lastPoint;
