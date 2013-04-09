@@ -119,30 +119,23 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 			page.removeEventListener('appBack', appBack, false);
 			if (!slideviewer) return;
 
-			slideviewer.disable3d();
-			var elm = slideviewer.curMaster();
-			if (App.platform !== 'ios') {
+			if (App.platform === 'android') {
+				// Android cannot have any 3d!
+				slideviewer.disable3d();
+				var elm = slideviewer.curMaster();
 				var img = elm.querySelector('img');
-				// Removing this on iOS causes
-				// flicker when transitioning
-				// away from the photo viewer.
 				img.style.webkitBackfaceVisibility = '';
+
+				// This clips the image under the titlebar, but is the only
+				// way we can seem to avoid flicker when removing 3d from
+				// the slideviewer.
+				content.style.overflow = 'hidden';
 			}
 			slideviewer.eachMaster(function (elm, page) {
 				if (page !== slideviewer.page()) {
 					elm.style.visibility = 'hidden';
 				}
 			});
-
-			if (App.platform === 'android') {
-				// This clips the image under the titlebar, but is the only
-				// way we can seem to avoid flicker when transitioning away
-				// from an image on Android.
-				content.style.overflow = 'hidden';
-			} else {
-				var wrap = elm.querySelector('div');
-				wrap.style.overflow = 'hidden';
-			}
 		}
 
 
