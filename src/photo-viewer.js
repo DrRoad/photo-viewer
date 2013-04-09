@@ -73,6 +73,9 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		}
 		validateArgs();
 
+		// Force 3d acceleration of the loading image to avoid flickers
+		// on iOS.
+		opts.loadingElm.style.webkitBackfaceVisibility = 'hidden';
 		replaceChildren(content, opts.loadingElm);
 
 		if (opts.autoHideTitle) {
