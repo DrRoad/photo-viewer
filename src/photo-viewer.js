@@ -49,6 +49,7 @@ var PhotoViewer = (function (Zepto, jQuery, App) {
 		var eventBus = new EventBus();
 		var content = page.querySelector('.app-content');
 		content.setAttribute("data-no-scroll", "true");
+		content.style.overflow = 'hidden';
 		var topbar = page.querySelector('.app-topbar');
 		var title = page.querySelector('.app-title');
 
