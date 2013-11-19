@@ -421,6 +421,7 @@
 
 				self.mainHandStart(changedTouches);
 				self.multiHandStart(changedTouches, touches);
+				e.preventDefault();
 			};
 		}
 
@@ -437,6 +438,7 @@
 
 				self.mainHandMove(changedTouches);
 				self.multiHandMove(changedTouches, touches);
+				e.preventDefault();
 			};
 		}
 
@@ -453,6 +455,7 @@
 
 				self.mainHandEnd(changedTouches);
 				self.multiHandEnd(changedTouches, touches);
+				e.preventDefault();
 			};
 		}
 
