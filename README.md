@@ -20,45 +20,53 @@ Usage
 
 For basic usage, just give the PhotoViewer your page, and some urls to munch on:
 
-	App.controller('viewer', function (page, data) {
-		var photoViewer = new PhotoViewer(page, data.urls);
-	});
+```js
+App.controller('viewer', function (page, data) {
+	var photoViewer = new PhotoViewer(page, data.urls);
+});
+```
 
 You can listen to events:
 
+```js
+photoViewer.on('flip', function (page) {
+	data.index = page;
+	App.saveStack();
+});
+```
+
+And customize the options to your needs:
+
+```js
+var photoViewer = new PhotoViewer(page, urls, {
+	// Automatically update the page title as the user swipes through
+	// photos?
+	automaticTitles: true,
+	// Hide the titlebar automatically, using whichever gestures are
+	// recognized on the device's native photo viewer.
+	autoHideTitle: true,
+	// An element used as a placeholder while photos are loading.
+	// A duplicate is made each time it is used.
+	loadingElm: defaultLoadingElm,
+	// Photo index to start at.
+	startAt: 0,
+});
+```
+
+A complete example of a typical PhotoViewer user:
+
+```js
+App.controller('viewer', function (page, data) {
+	var photoViewer = new PhotoViewer(page, data.urls, {
+		startAt: parstInt(data.index, 10),
+	});
 	photoViewer.on('flip', function (page) {
 		data.index = page;
 		App.saveStack();
 	});
-
-And customize the options to your needs:
-
-	var photoViewer = new PhotoViewer(page, urls, {
-		// Automatically update the page title as the user swipes through
-		// photos?
-		automaticTitles: true,
-		// Hide the titlebar automatically, using whichever gestures are
-		// recognized on the device's native photo viewer.
-		autoHideTitle: true,
-		// An element used as a placeholder while photos are loading.
-		// A duplicate is made each time it is used.
-		loadingElm: defaultLoadingElm,
-		// Photo index to start at.
-		startAt: 0,
-	});
-
-A complete example of a typical PhotoViewer user:
-
-	App.controller('viewer', function (page, data) {
-		var photoViewer = new PhotoViewer(page, data.urls, {
-			startAt: parstInt(data.index, 10),
-		});
-		photoViewer.on('flip', function (page) {
-			data.index = page;
-			App.saveStack();
-		});
-	});
-	App.load('viewer', {
-		urls: ['funny-cat-picture.jpg', 'funny-lolcat.jpg'],
-		index: 1,
-	});
+});
+App.load('viewer', {
+	urls: ['funny-cat-picture.jpg', 'funny-lolcat.jpg'],
+	index: 1,
+});
+```
