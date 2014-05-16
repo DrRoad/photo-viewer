@@ -20,7 +20,7 @@ Usage
 
 For basic usage, just give the PhotoViewer your page, and some urls to munch on:
 
-	App.populator('viewer', function (page, data) {
+	App.controller('viewer', function (page, data) {
 		var photoViewer = new PhotoViewer(page, data.urls);
 	});
 
@@ -49,7 +49,7 @@ And customize the options to your needs:
 
 A complete example of a typical PhotoViewer user:
 
-	App.populator('viewer', function (page, data) {
+	App.controller('viewer', function (page, data) {
 		var photoViewer = new PhotoViewer(page, data.urls, {
 			startAt: parstInt(data.index, 10),
 		});
